@@ -7,6 +7,7 @@ Autora: Isadora Soares Guedes
 ## Entrega do módulo 1
 
 - Entrega do repositório
+- Projeto/Pasta: Hello3D
 - Código alterado para exibição de "Isadora Guedes" no nome da janela
 
 ![imagem](IsadoraGuedesJanela.png)
