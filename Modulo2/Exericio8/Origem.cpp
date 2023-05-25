@@ -28,6 +28,8 @@ using namespace std;
 // Protótipo da função de callback de teclado
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
+void resetAllRotate();
+
 // Protótipos das funções
 int setupShader();
 int setupGeometry();
@@ -49,7 +51,7 @@ const GLchar* vertexShaderSource = "#version 400\n"
 "}\0";
 
 //Códifo fonte do Fragment Shader (em GLSL): ainda hardcoded
-const GLchar* fragmentShaderSource = "#version 400\n"
+const GLchar* fragmentShaderSource = "#version 450\n"
 "in vec4 finalColor;\n"
 "out vec4 color;\n"
 "void main()\n"
@@ -57,7 +59,8 @@ const GLchar* fragmentShaderSource = "#version 400\n"
 "color = finalColor;\n"
 "}\n\0";
 
-bool rotateX=false, rotateY=false, rotateZ=false;
+bool rotateX = false, rotateY = false, rotateZ = false;
+bool reverseRotateX = false, reverseRotateY = false, reverseRotateZ = false;
 
 // Função MAIN
 int main()
@@ -69,9 +72,9 @@ int main()
 	//Você deve adaptar para a versão do OpenGL suportada por sua placa
 	//Sugestão: comente essas linhas de código para desobrir a versão e
 	//depois atualize (por exemplo: 4.5 com 4 e 5)
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	//Essencial para computadores da Apple
 //#ifdef __APPLE__
@@ -143,14 +146,29 @@ int main()
 			model = glm::rotate(model, angle, glm::vec3(1.0f, 0.0f, 0.0f));
 			
 		}
+		if (reverseRotateX)
+		{
+			model = glm::rotate(model, -angle, glm::vec3(1.0f, 0.0f, 0.0f));
+
+		}
 		else if (rotateY)
 		{
 			model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 
 		}
+		else if (reverseRotateY)
+		{
+			model = glm::rotate(model, -angle, glm::vec3(0.0f, 1.0f, 0.0f));
+
+		}
 		else if (rotateZ)
 		{
 			model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+
+		}
+		else if (reverseRotateZ)
+		{
+			model = glm::rotate(model, -angle, glm::vec3(0.0f, 0.0f, 1.0f));
 
 		}
 
@@ -159,12 +177,12 @@ int main()
 		// Poligono Preenchido - GL_TRIANGLES
 		
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 18);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
 		
-		glDrawArrays(GL_POINTS, 0, 18);
+		glDrawArrays(GL_POINTS, 0, 36);
 		glBindVertexArray(0);
 
 		// Troca os buffers da tela
@@ -185,29 +203,51 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
-	if (key == GLFW_KEY_X && action == GLFW_PRESS)
+	if ((key == GLFW_KEY_X || key == GLFW_KEY_W) && action == GLFW_PRESS)
 	{
+		resetAllRotate();
 		rotateX = true;
-		rotateY = false;
-		rotateZ = false;
 	}
 
-	if (key == GLFW_KEY_Y && action == GLFW_PRESS)
+	if ((key == GLFW_KEY_Y || key == GLFW_KEY_J) && action == GLFW_PRESS)
 	{
-		rotateX = false;
+		resetAllRotate();
 		rotateY = true;
-		rotateZ = false;
 	}
 
-	if (key == GLFW_KEY_Z && action == GLFW_PRESS)
+	if ((key == GLFW_KEY_Z || key == GLFW_KEY_A)&& action == GLFW_PRESS)
 	{
-		rotateX = false;
-		rotateY = false;
+		resetAllRotate();
 		rotateZ = true;
 	}
 
+	//novos comandos
+	if (key == GLFW_KEY_S && action == GLFW_PRESS)
+	{
+		resetAllRotate();
+		reverseRotateX = true;
+	}
 
+	if (key == GLFW_KEY_I && action == GLFW_PRESS)
+	{
+		resetAllRotate();
+		reverseRotateY = true;
+	}
 
+	if (key == GLFW_KEY_D && action == GLFW_PRESS)
+	{
+		resetAllRotate();
+		reverseRotateZ = true;
+	}
+}
+
+void resetAllRotate() {
+	reverseRotateX = false;
+	reverseRotateY = false;
+	reverseRotateZ = false;
+	rotateX = false;
+	rotateY = false;
+	rotateZ = false;
 }
 
 //Esta função está basntante hardcoded - objetivo é compilar e "buildar" um programa de
@@ -270,61 +310,60 @@ int setupGeometry()
 	// Cada atributo do vértice (coordenada, cores, coordenadas de textura, normal, etc)
 	// Pode ser arazenado em um VBO único ou em VBOs separados
 	GLfloat vertices[] = {
-		/*
-		//lado laranja 1
-		//x    y    z    r    g    b
-		-0.5, -0.5, -0.5, 1.0, 0.5, 0.25, //amarelo - laranja A
-		-0.5, -0.5,  0.5, 1.0, 0.5, 0.25, //azul B
-		 0.5, -0.5, -0.5, 1.0, 0.5, 0.25, //roxo C
-
-		 -0.5, -0.5,  0.5, 1.0, 0.5, 0.25, //amarelo B
-		  0.5, -0.5,  0.5, 1.0, 0.5, 0.25, //azul D
-		  0.5, -0.5, -0.5, 1.0, 0.5, 0.25, //roxo C
-		  
-		 //lado preto e verde escuro 2
-		  0.5, -0.5,  0.5, 0.0, 0.0, 0.0, //preto D
-		  0.5,  0.5, -0.5, 0.0, 0.0, 0.0, //preto E
-		  0.5, -0.5, -0.5, 0.0, 0.0, 0.0, //preto C
-		  
-		  0.5,  0.5, -0.5, 0.0, 0.32, 0.37, //verde cinza E
-		  0.5, -0.5,  0.5, 0.0, 0.32, 0.37, //verde cinza D
-		  0.5,  0.5,  0.5, 0.0, 0.32, 0.37, //verde cinza F
-		  */
-		  //lado roxo 3
-		  0.5,  0.5, -0.5, 1.0, 0.0, 1.0, //roxo E
-		  0.5,  0.5,  0.5, 1.0, 0.0, 1.0, //roxo F
-		 -0.5,  0.5, -0.5, 1.0, 0.0, 1.0, //roxo G
-
-		 -0.5,  0.5, -0.5, 1.0, 0.0, 1.0, //roxo G
-		  0.5,  0.5,  0.5, 1.0, 0.0, 1.0, //roxo F
-		 -0.5,  0.5,  0.5, 1.0, 0.0, 1.0, //roxo H
-		  
-		  //lado amarelo 4
-		 -0.5, -0.5,  0.5, 1.0, 1.0, 0.0, //amarelo B
-		 -0.5, -0.5, -0.5, 1.0, 1.0, 0.0, //amarelo A
-		 -0.5,  0.5, -0.5, 1.0, 1.0, 0.0, //amarelo G
-		 
-		 -0.5, -0.5,  0.5, 1.0, 1.0, 0.0, //amarelo B
-		 -0.5,  0.5, -0.5, 1.0, 1.0, 0.0, //amarelo G
-		 -0.5,  0.5,  0.5, 1.0, 1.0, 0.0, //amarelo H
-		 
-		 //lado azul 5
-		-0.5, -0.5,  0.5, 0.0, 1.0, 1.0, //amarelo B
-		 0.5,  0.5,  0.5, 0.0, 1.0, 1.0, //roxo F
-		 0.5, -0.5,  0.5, 0.0, 1.0, 1.0, //verde cinza D
-
-		 -0.5, -0.5, 0.5, 0.0, 1.0, 1.0, //amarelo B
-		  0.5,  0.5, 0.5, 0.0, 1.0, 1.0, //roxo F
-		 -0.5,  0.5, 0.5, 0.0, 1.0, 1.0, //amarelo H
-		
-		//lado verde 6 ok
-		-0.5, -0.5, -0.5, 0.0, 1.0, 0.0, //amarelo A
-		-0.5,  0.5, -0.5, 0.0, 1.0, 0.0, //amarelo G
-		 0.5,  0.5, -0.5, 0.0, 1.0, 0.0, //roxo E
-
-		 0.5,  0.5, -0.5, 0.0, 1.0, 0.0, //roxo E
+		//lado verde 6 front face
 		-0.5, -0.5, -0.5, 0.0, 1.0, 0.0, //amarelo A
 		 0.5, -0.5, -0.5, 0.0, 1.0, 0.0, //preto C
+		 0.5,  0.5, -0.5, 0.0, 1.0, 0.0, //roxo E
+
+		-0.5, -0.5, -0.5, 0.0, 1.0, 0.0, //amarelo A
+		 0.5,  0.5, -0.5, 0.0, 1.0, 0.0, //roxo E
+		-0.5,  0.5, -0.5, 0.0, 1.0, 0.0, //amarelo G
+		
+		//lado laranja 1 right face
+		//x    y    z    r    g    b
+		 0.5, -0.5, -0.5, 1.0, 0.5, 0.25, // C
+		 0.5, -0.5,  0.5, 1.0, 0.5, 0.25, // D
+		 0.5,  0.5,  0.5, 1.0, 0.5, 0.25, // F
+
+		 0.5, -0.5, -0.5, 1.0, 0.5, 0.25, // C
+		 0.5,  0.5,  0.5, 1.0, 0.5, 0.25, // F
+		 0.5,  0.5, -0.5, 1.0, 0.5, 0.25, // E
+		 
+		 //lado preto e verde escuro 2 back face
+		  0.5, -0.5,  0.5, 0.0, 0.0, 0.0, //preto D
+		 -0.5, -0.5,  0.5, 0.0, 0.0, 0.0, //preto B
+		 -0.5,  0.5,  0.5, 0.0, 0.0, 0.0, //preto H
+		  
+		  0.5, -0.5,  0.5, 0.0, 0.0, 0.0, //preto D
+		 -0.5,  0.5,  0.5, 0.0, 0.0, 0.0, //preto H
+		  0.5,  0.5,  0.5, 0.0, 0.0, 0.0, //preto F
+		  
+		  //lado roxo 3 left face
+		 -0.5, -0.5,  0.5, 1.0, 0.0, 1.0, //roxo B
+		 -0.5, -0.5, -0.5, 1.0, 0.0, 1.0, //roxo a
+		 -0.5,  0.5, -0.5, 1.0, 0.0, 1.0, //roxo g
+
+		 -0.5, -0.5,  0.5, 1.0, 0.0, 1.0, //roxo B
+		 -0.5,  0.5, -0.5, 1.0, 0.0, 1.0, //roxo G
+		 -0.5,  0.5,  0.5, 1.0, 0.0, 1.0, //roxo H
+		  
+		  //lado amarelo 4 top face
+		 -0.5,  0.5, -0.5, 1.0, 1.0, 0.0, //amarelo G
+		  0.5,  0.5, -0.5, 1.0, 1.0, 0.0, //amarelo E
+		  0.5,  0.5,  0.5, 1.0, 1.0, 0.0, //amarelo F
+		 
+		 -0.5,  0.5, -0.5, 1.0, 1.0, 0.0, //amarelo G
+		  0.5,  0.5,  0.5, 1.0, 1.0, 0.0, //amarelo F
+		 -0.5,  0.5,  0.5, 1.0, 1.0, 0.0, //amarelo H
+		 
+		 //lado azul 5 bottom face
+		-0.5, -0.5,  0.5, 0.0, 1.0, 1.0, //amarelo B
+		 0.5, -0.5,  0.5, 0.0, 1.0, 1.0, //roxo d
+		 0.5, -0.5, -0.5, 0.0, 1.0, 1.0, //verde cinza C
+
+		 -0.5, -0.5, 0.5, 0.0, 1.0, 1.0, //amarelo B
+		  0.5, -0.5, -0.5, 0.0, 1.0, 1.0, //roxo C
+		 -0.5, -0.5, -0.5, 0.0, 1.0, 1.0, //amarelo a
 	};
 
 	GLuint VBO, VAO;
@@ -362,7 +401,6 @@ int setupGeometry()
 	glEnableVertexAttribArray(1);
 
 
-
 	// Observe que isso é permitido, a chamada para glVertexAttribPointer registrou o VBO como o objeto de buffer de vértice 
 	// atualmente vinculado - para que depois possamos desvincular com segurança
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -372,4 +410,3 @@ int setupGeometry()
 
 	return VAO;
 }
-
