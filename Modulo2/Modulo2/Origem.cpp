@@ -65,8 +65,12 @@ const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 800;
 
 // Scale parameters
-float scaleLevel = 0.1f;
+float scaleLevel = 0.5f;
 
+// Translation values
+GLfloat translateX = 0.0f;
+GLfloat translateY = 0.0f;
+GLfloat translateZ = 0.0f;
 
 int main()
 {
@@ -141,20 +145,38 @@ int main()
 		
 		model = rotateAll(model);
 
+		model = glm::translate(model, glm::vec3(translateX, translateY, translateZ));
+
 		model = glm::scale(model, glm::vec3(scaleLevel, scaleLevel, scaleLevel));
 
-
 		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
+
 		// Chamada de desenho - drawcall
 		// Poligono Preenchido - GL_TRIANGLES
 
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 144);
+		glDrawArrays(GL_TRIANGLES, 0, 72);
 
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
 
-		glDrawArrays(GL_POINTS, 0, 144);
+		glDrawArrays(GL_POINTS, 0, 72);
+		glBindVertexArray(0);
+
+		model = glm::translate(model, glm::vec3(1.5, 0, 0));
+
+		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
+
+		// Chamada de desenho - drawcall
+		// Poligono Preenchido - GL_TRIANGLES
+
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 72);
+
+		// Chamada de desenho - drawcall
+		// CONTORNO - GL_LINE_LOOP
+
+		glDrawArrays(GL_POINTS, 0, 72);
 		glBindVertexArray(0);
 
 		// Troca os buffers da tela
@@ -231,24 +253,24 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
-	if ((key == GLFW_KEY_X || key == GLFW_KEY_W) && action == GLFW_PRESS)
+	if ((key == GLFW_KEY_X) && action == GLFW_PRESS)
 	{
 		resetAllRotate();
 		rotateX = true;
 	}
 
-	if ((key == GLFW_KEY_Y || key == GLFW_KEY_J) && action == GLFW_PRESS)
+	if ((key == GLFW_KEY_Y) && action == GLFW_PRESS)
 	{
 		resetAllRotate();
 		rotateY = true;
 	}
 
-	if ((key == GLFW_KEY_Z || key == GLFW_KEY_A)&& action == GLFW_PRESS)
+	if ((key == GLFW_KEY_Z)&& action == GLFW_PRESS)
 	{
 		resetAllRotate();
 		rotateZ = true;
 	}
-
+	/*
 	//novos comandos
 	if (key == GLFW_KEY_S && action == GLFW_PRESS)
 	{
@@ -266,6 +288,34 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	{
 		resetAllRotate();
 		reverseRotateZ = true;
+	}*/
+
+	// transladar -----------------
+	if (action == GLFW_PRESS)
+	{
+		switch (key)
+		{
+		case GLFW_KEY_A:
+			translateX -= 0.1f;
+			break;
+		case GLFW_KEY_D:
+			translateX += 0.1f;
+			break;
+		case GLFW_KEY_W:
+			translateY += 0.1f;
+			break;
+		case GLFW_KEY_S:
+			translateY -= 0.1f;
+			break;
+		case GLFW_KEY_I:
+			translateZ += 0.1f;
+			break;
+		case GLFW_KEY_J:
+			translateZ -= 0.1f;
+			break;
+		default:
+			break;
+		}
 	}
 }
 
@@ -394,7 +444,7 @@ int setupGeometry()
 		 -0.5, -0.5, -0.5, 0.0, 1.0, 1.0, //amarelo a
 
 		 /*--------------------------------------------*/
-		
+		/*
 		 -0.5, 1.0, -0.5, 0.0, 1.0, 0.0, //amarelo A
 		 0.5, 1.0, -0.5, 0.0, 1.0, 0.0, //preto C
 		 0.5, 2.0, -0.5, 0.0, 1.0, 0.0, //roxo E
@@ -447,7 +497,7 @@ int setupGeometry()
 
 		-0.5, 1.0, 0.5, 0.0, 1.0, 1.0, //amarelo B
 		 0.5, 1.0, -0.5, 0.0, 1.0, 1.0, //roxo C
-		-0.5, 1.0, -0.5, 0.0, 1.0, 1.0, //amarelo a
+		-0.5, 1.0, -0.5, 0.0, 1.0, 1.0, //amarelo a*/
 	};
 
 	GLuint VBO, VAO;
