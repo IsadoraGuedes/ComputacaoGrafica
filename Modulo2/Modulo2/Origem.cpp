@@ -60,41 +60,25 @@ const GLchar* fragmentShaderSource = "#version 450\n"
 bool rotateX = false, rotateY = false, rotateZ = false;
 bool reverseRotateX = false, reverseRotateY = false, reverseRotateZ = false;
 
-
-// RESIZE DECLARATIONS
-// 
 // Window size
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 800;
 
-// Camera parameters
-glm::vec3 cameraPosition(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraTarget(0.0f, 0.0f, 0.0f);
-glm::vec3 cameraUp(0.0f, 1.0f, 0.0f);
-float fov = 45.0f;
-float zoomLevel = 1.0f;
+// Scale parameters
+float scaleLevel = 0.1f;
 
 
-// Função MAIN
 int main()
 {
-	// Inicializa��o da GLFW
+	// Inicializa��o da GLFF
 	glfwInit();
 
-	//Muita aten��o aqui: alguns ambientes n�o aceitam essas configura��es
-	//Voc� deve adaptar para a vers�o do OpenGL suportada por sua placa
-	//Sugest�o: comente essas linhas de c�digo para desobrir a vers�o e
-	//depois atualize (por exemplo: 4.5 com 4 e 5)
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	//Essencial para computadores da Apple
-//#ifdef __APPLE__
-//	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-//#endif
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	// Cria��o da janela GLFW
+	// Criacao da janela GLFW
 	GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Modulo 2", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 
@@ -154,8 +138,11 @@ int main()
 		float angle = (GLfloat)glfwGetTime();
 
 		model = glm::mat4(1);
-
+		
 		model = rotateAll(model);
+
+		model = glm::scale(model, glm::vec3(scaleLevel, scaleLevel, scaleLevel));
+
 
 		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
 		// Chamada de desenho - drawcall
@@ -175,7 +162,7 @@ int main()
 	}
 	// Pede pra OpenGL desalocar os buffers
 	glDeleteVertexArrays(1, &VAO);
-	// Finaliza a execu��o da GLFW, limpando os recursos alocados por ela
+	// Finaliza a execucao da GLFW, limpando os recursos alocados por ela
 	glfwTerminate();
 	return 0;
 }
@@ -184,6 +171,7 @@ glm::mat4 rotateAll(glm::mat4 model) {
 	float angle = (GLfloat)glfwGetTime();
 
 	model = glm::mat4(1);
+
 	if (rotateX)
 	{
 		model = glm::rotate(model, angle, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -224,20 +212,18 @@ glm::mat4 rotateAll(glm::mat4 model) {
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
 
-	//ZOOM ---------------
+	//SCALE ---------------
 	
 	if (key == GLFW_KEY_T && action == GLFW_PRESS)
 	{
-		printf("entrou T");
-		// Zoom in
-		zoomLevel += 0.5f;
+		// Aumenta scale
+		scaleLevel += 0.1f;
 	}
 	else if (key == GLFW_KEY_R && action == GLFW_PRESS)
 	{
-		printf("entrou R");
-		// Zoom out
-		zoomLevel -= 0.5f;
-		zoomLevel = glm::max(zoomLevel, 0.5f);
+		// Diminui scale
+		scaleLevel -= 0.1f;
+		//zoomLevel = glm::max(zoomLevel, 0.5f);
 	}
 
 	//Rotation----------------------
@@ -408,7 +394,7 @@ int setupGeometry()
 		 -0.5, -0.5, -0.5, 0.0, 1.0, 1.0, //amarelo a
 
 		 /*--------------------------------------------*/
-
+		
 		 -0.5, 1.0, -0.5, 0.0, 1.0, 0.0, //amarelo A
 		 0.5, 1.0, -0.5, 0.0, 1.0, 0.0, //preto C
 		 0.5, 2.0, -0.5, 0.0, 1.0, 0.0, //roxo E
