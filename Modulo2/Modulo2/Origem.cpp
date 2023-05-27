@@ -1,9 +1,9 @@
-﻿/* mÓDULO 2 - código adaptado de https://learnopengl.com/#!Getting-started/Hello-Triangle
+﻿/* MÓDULO 2 - código adaptado de https://learnopengl.com/#!Getting-started/Hello-Triangle
  *
  * Adaptado por Rossana Baptista Queiroz
  * para a disciplina de Processamento Gráfico - Jogos Digitais - Unisinos
  * Versão inicial: 7/4/2017
- * Última atualização em 12/05/2023
+ * Última atualização em 26/05/2023
  *
  */
 
@@ -74,9 +74,7 @@ GLfloat translateZ = 0.0f;
 
 int main()
 {
-	// Inicializa��o da GLFF
 	glfwInit();
-
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
@@ -93,7 +91,6 @@ int main()
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
-
 	}
 
 	// Obtendo as informa��es de vers�o
@@ -107,13 +104,11 @@ int main()
 	glfwGetFramebufferSize(window, &width, &height);
 	glViewport(0, 0, width, height);
 
-
 	// Compilando e buildando o programa de shader
 	GLuint shaderID = setupShader();
 
 	// Gerando um buffer simples, com a geometria de um tri�ngulo
 	GLuint VAO = setupGeometry();
-
 
 	glUseProgram(shaderID);
 
@@ -126,10 +121,8 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 
-	// Loop da aplica��o - "game loop"
 	while (!glfwWindowShouldClose(window))
 	{
-		// Checa se houveram eventos de input (key pressed, mouse moved etc.) e chama as fun��es de callback correspondentes
 		glfwPollEvents();
 
 		// Limpa o buffer de cor
@@ -163,18 +156,14 @@ int main()
 		glDrawArrays(GL_POINTS, 0, 72);
 		glBindVertexArray(0);
 
+		//INSTANCIA SEGUNDO CUBO
+
 		model = glm::translate(model, glm::vec3(1.5, 0, 0));
 
 		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
 
-		// Chamada de desenho - drawcall
-		// Poligono Preenchido - GL_TRIANGLES
-
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 72);
-
-		// Chamada de desenho - drawcall
-		// CONTORNO - GL_LINE_LOOP
 
 		glDrawArrays(GL_POINTS, 0, 72);
 		glBindVertexArray(0);
@@ -228,13 +217,10 @@ glm::mat4 rotateAll(glm::mat4 model) {
 	return model;
 }
 
-// Função de callback de teclado - só pode ter uma instância (deve ser estática se
-// estiver dentro de uma classe) - É chamada sempre que uma tecla for pressionada
-// ou solta via GLFW
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
 
-	//SCALE ---------------
+	//Escala ---------------
 	
 	if (key == GLFW_KEY_T && action == GLFW_PRESS)
 	{
@@ -248,7 +234,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		//zoomLevel = glm::max(zoomLevel, 0.5f);
 	}
 
-	//Rotation----------------------
+	//Rotação----------------------
 
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
@@ -270,48 +256,30 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		resetAllRotate();
 		rotateZ = true;
 	}
-	/*
-	//novos comandos
-	if (key == GLFW_KEY_S && action == GLFW_PRESS)
-	{
-		resetAllRotate();
-		reverseRotateX = true;
-	}
 
-	if (key == GLFW_KEY_I && action == GLFW_PRESS)
-	{
-		resetAllRotate();
-		reverseRotateY = true;
-	}
+	// Translação -----------------
 
-	if (key == GLFW_KEY_D && action == GLFW_PRESS)
-	{
-		resetAllRotate();
-		reverseRotateZ = true;
-	}*/
-
-	// transladar -----------------
-	if (action == GLFW_PRESS)
+	if (action == GLFW_PRESS || action == GLFW_REPEAT)
 	{
 		switch (key)
 		{
 		case GLFW_KEY_A:
-			translateX -= 0.1f;
+			translateX -= 0.01f;
 			break;
 		case GLFW_KEY_D:
-			translateX += 0.1f;
+			translateX += 0.01f;
 			break;
 		case GLFW_KEY_W:
-			translateY += 0.1f;
+			translateY += 0.01f;
 			break;
 		case GLFW_KEY_S:
-			translateY -= 0.1f;
+			translateY -= 0.01f;
 			break;
 		case GLFW_KEY_I:
-			translateZ += 0.1f;
+			translateZ += 0.01f;
 			break;
 		case GLFW_KEY_J:
-			translateZ -= 0.1f;
+			translateZ -= 0.01f;
 			break;
 		default:
 			break;
@@ -442,62 +410,6 @@ int setupGeometry()
 		 -0.5, -0.5, 0.5, 0.0, 1.0, 1.0, //amarelo B
 		  0.5, -0.5, -0.5, 0.0, 1.0, 1.0, //roxo C
 		 -0.5, -0.5, -0.5, 0.0, 1.0, 1.0, //amarelo a
-
-		 /*--------------------------------------------*/
-		/*
-		 -0.5, 1.0, -0.5, 0.0, 1.0, 0.0, //amarelo A
-		 0.5, 1.0, -0.5, 0.0, 1.0, 0.0, //preto C
-		 0.5, 2.0, -0.5, 0.0, 1.0, 0.0, //roxo E
-
-		-0.5, 1.0, -0.5, 0.0, 1.0, 0.0, //amarelo A
-		 0.5, 2.0, -0.5, 0.0, 1.0, 0.0, //roxo E
-		-0.5, 2.0, -0.5, 0.0, 1.0, 0.0, //amarelo G
-
-		//lado laranja 1 right face
-		//x    y    z    r    g    b
-		 0.5, 1.0, -0.5, 1.0, 0.5, 0.25, // C
-		 0.5, 2.0,  0.5, 1.0, 0.5, 0.25, // D
-		 0.5, 2.0,  0.5, 1.0, 0.5, 0.25, // F
-
-		 0.5, 1.0, -0.5, 1.0, 0.5, 0.25, // C
-		 0.5, 2.0,  0.5, 1.0, 0.5, 0.25, // F
-		 0.5, 2.0, -0.5, 1.0, 0.5, 0.25, // E
-
-		 //lado preto e verde escuro 2 back face
-		  0.5, 1.0,  0.5, 0.0, 0.0, 0.0, //preto D
-		 -0.5, 1.0,  0.5, 0.0, 0.0, 0.0, //preto B
-		 -0.5, 2.0,  0.5, 0.0, 0.0, 0.0, //preto H
-
-		  0.5, 1.0,  0.5, 0.0, 0.0, 0.0, //preto D
-		 -0.5, 2.0,  0.5, 0.0, 0.0, 0.0, //preto H
-		  0.5, 2.0,  0.5, 0.0, 0.0, 0.0, //preto F
-
-		  //lado roxo 3 left face
-		 -0.5, 1.0,  0.5, 1.0, 0.0, 1.0, //roxo B
-		 -0.5, 1.0, -0.5, 1.0, 0.0, 1.0, //roxo a
-		 -0.5, 2.0, -0.5, 1.0, 0.0, 1.0, //roxo g
-
-		 -0.5, 1.0,  0.5, 1.0, 0.0, 1.0, //roxo B
-		 -0.5, 2.0, -0.5, 1.0, 0.0, 1.0, //roxo G
-		 -0.5, 2.0,  0.5, 1.0, 0.0, 1.0, //roxo H
-
-		 //lado amarelo 4 top face
-		-0.5,  2.0, -0.5, 1.0, 1.0, 0.0, //amarelo G
-		 0.5,  2.0, -0.5, 1.0, 1.0, 0.0, //amarelo E
-		 0.5,  2.0,  0.5, 1.0, 1.0, 0.0, //amarelo F
-
-		-0.5,  2.0, -0.5, 1.0, 1.0, 0.0, //amarelo G
-		 0.5,  2.0,  0.5, 1.0, 1.0, 0.0, //amarelo F
-		-0.5,  2.0,  0.5, 1.0, 1.0, 0.0, //amarelo H
-
-		//lado azul 5 bottom face
-	   -0.5, 1.0,  0.5, 0.0, 1.0, 1.0, //amarelo B
-		0.5, 1.0,  0.5, 0.0, 1.0, 1.0, //roxo d
-		0.5, 1.0, -0.5, 0.0, 1.0, 1.0, //verde cinza C
-
-		-0.5, 1.0, 0.5, 0.0, 1.0, 1.0, //amarelo B
-		 0.5, 1.0, -0.5, 0.0, 1.0, 1.0, //roxo C
-		-0.5, 1.0, -0.5, 0.0, 1.0, 1.0, //amarelo a*/
 	};
 
 	GLuint VBO, VAO;
