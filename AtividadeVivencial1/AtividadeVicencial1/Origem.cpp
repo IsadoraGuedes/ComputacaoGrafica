@@ -8,6 +8,9 @@
 #include <iostream>
 #include <string>
 #include <assert.h>
+#include <fstream>
+#include <vector>
+#include <sstream>
 
 using namespace std;
 
@@ -22,9 +25,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void resetAllRotate();
 
 glm::mat4 rotateAll(glm::mat4);
+glm::mat4 setupTransformacoes(glm::mat4);
 
 int setupShader();
 int setupGeometry();
+
+GLFWwindow* stupWindow();
 
 // Código fonte do Vertex Shader (em GLSL): ainda hardcoded
 const GLchar* vertexShaderSource = "#version 400\n"
@@ -65,27 +71,7 @@ GLfloat translateZ = 0.0f;
 
 int main()
 {
-	glfwInit();
-
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Atividade Vicencial 1", nullptr, nullptr);
-	glfwMakeContextCurrent(window);
-
-	glfwSetKeyCallback(window, key_callback);
-
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
-	}
-
-	// Obtendo as informa��es de vers�o
-	const GLubyte* renderer = glGetString(GL_RENDERER); /* get renderer string */
-	const GLubyte* version = glGetString(GL_VERSION); /* version as a string */
-	cout << "Renderer: " << renderer << endl;
-	cout << "OpenGL version supported " << version << endl;
+	GLFWwindow* window = stupWindow();
 
 	// Definindo as dimens�es da viewport com as mesmas dimens�es da janela da aplica��o
 	int width, height;
@@ -108,6 +94,48 @@ int main()
 
 	glEnable(GL_DEPTH_TEST);
 
+	string v;
+
+	std::vector<GLfloat> vObj;
+
+	ifstream file("../Arquivos/inicial.obj");
+
+	if (!file.is_open()) {
+		std::cout << "Failed to open the file." << std::endl;
+		return 1; // Exit the program
+	}
+
+	std::string line;
+
+	while (std::getline(file, line)) {
+		if (line.length() > 0 && line[0] == 'v') {
+			std::cout << "line:" + line << std::endl;
+
+			std::stringstream ss(line);
+
+			// Read and discard the prefix "v"
+			std::string prefix;
+			ss >> prefix;
+
+			GLfloat value;
+			while (ss >> value) {
+				vObj.push_back(value);
+			}
+		}
+	}
+
+	// Print the extracted float values
+	for (const auto& floatValue : vObj) {
+		std::cout << floatValue << " ";
+	}
+	std::cout << std::endl;
+
+
+	file.close();
+
+	
+
+
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
@@ -119,15 +147,7 @@ int main()
 		glLineWidth(10);
 		glPointSize(20);
 
-		float angle = (GLfloat)glfwGetTime();
-
-		model = glm::mat4(1);
-		
-		model = rotateAll(model);
-
-		model = glm::translate(model, glm::vec3(translateX, translateY, translateZ));
-
-		model = glm::scale(model, glm::vec3(scaleLevel, scaleLevel, scaleLevel));
+		model = setupTransformacoes(model);
 
 		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
 
@@ -135,12 +155,12 @@ int main()
 		// Poligono Preenchido - GL_TRIANGLES
 
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 72);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
 
-		glDrawArrays(GL_POINTS, 0, 72);
+		glDrawArrays(GL_POINTS, 0, 6);
 		glBindVertexArray(0);
 
 		// Troca os buffers da tela
@@ -151,6 +171,46 @@ int main()
 
 	glfwTerminate();
 	return 0;
+}
+
+glm::mat4 setupTransformacoes(glm::mat4 model) {
+	float angle = (GLfloat)glfwGetTime();
+
+	model = glm::mat4(1);
+
+	model = rotateAll(model);
+
+	model = glm::translate(model, glm::vec3(translateX, translateY, translateZ));
+
+	model = glm::scale(model, glm::vec3(scaleLevel, scaleLevel, scaleLevel));
+
+	return model;
+}
+
+GLFWwindow* stupWindow() {
+	glfwInit();
+
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Atividade Vicencial 1", nullptr, nullptr);
+	glfwMakeContextCurrent(window);
+
+	glfwSetKeyCallback(window, key_callback);
+
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	{
+		std::cout << "Failed to initialize GLAD" << std::endl;
+	}
+
+	// Obtendo as informa��es de vers�o
+	const GLubyte* renderer = glGetString(GL_RENDERER); /* get renderer string */
+	const GLubyte* version = glGetString(GL_VERSION); /* version as a string */
+	cout << "Renderer: " << renderer << endl;
+	cout << "OpenGL version supported " << version << endl;
+
+	return window;
 }
 
 glm::mat4 rotateAll(glm::mat4 model) {
@@ -307,59 +367,13 @@ int setupGeometry()
 	// Pode ser arazenado em um VBO único ou em VBOs separados
 	GLfloat vertices[] = {
 		//lado verde 6 front face
-		-0.5, -0.5, -0.5, 0.0, 1.0, 0.0, //amarelo A
-		 0.5, -0.5, -0.5, 0.0, 1.0, 0.0, //preto C
-		 0.5,  0.5, -0.5, 0.0, 1.0, 0.0, //roxo E
+		-0.5, -0.5, -0.5, 
+		 0.5, -0.5, -0.5, 
+		 0.5,  0.5, -0.5,
 
-		-0.5, -0.5, -0.5, 0.0, 1.0, 0.0, //amarelo A
-		 0.5,  0.5, -0.5, 0.0, 1.0, 0.0, //roxo E
-		-0.5,  0.5, -0.5, 0.0, 1.0, 0.0, //amarelo G
-		
-		//lado laranja 1 right face
-		//x    y    z    r    g    b
-		 0.5, -0.5, -0.5, 1.0, 0.5, 0.25, // C
-		 0.5, -0.5,  0.5, 1.0, 0.5, 0.25, // D
-		 0.5,  0.5,  0.5, 1.0, 0.5, 0.25, // F
-
-		 0.5, -0.5, -0.5, 1.0, 0.5, 0.25, // C
-		 0.5,  0.5,  0.5, 1.0, 0.5, 0.25, // F
-		 0.5,  0.5, -0.5, 1.0, 0.5, 0.25, // E
-		 
-		 //lado preto e verde escuro 2 back face
-		  0.5, -0.5,  0.5, 0.0, 0.0, 0.0, //preto D
-		 -0.5, -0.5,  0.5, 0.0, 0.0, 0.0, //preto B
-		 -0.5,  0.5,  0.5, 0.0, 0.0, 0.0, //preto H
-		  
-		  0.5, -0.5,  0.5, 0.0, 0.0, 0.0, //preto D
-		 -0.5,  0.5,  0.5, 0.0, 0.0, 0.0, //preto H
-		  0.5,  0.5,  0.5, 0.0, 0.0, 0.0, //preto F
-		  
-		  //lado roxo 3 left face
-		 -0.5, -0.5,  0.5, 1.0, 0.0, 1.0, //roxo B
-		 -0.5, -0.5, -0.5, 1.0, 0.0, 1.0, //roxo a
-		 -0.5,  0.5, -0.5, 1.0, 0.0, 1.0, //roxo g
-
-		 -0.5, -0.5,  0.5, 1.0, 0.0, 1.0, //roxo B
-		 -0.5,  0.5, -0.5, 1.0, 0.0, 1.0, //roxo G
-		 -0.5,  0.5,  0.5, 1.0, 0.0, 1.0, //roxo H
-		  
-		  //lado amarelo 4 top face
-		 -0.5,  0.5, -0.5, 1.0, 1.0, 0.0, //amarelo G
-		  0.5,  0.5, -0.5, 1.0, 1.0, 0.0, //amarelo E
-		  0.5,  0.5,  0.5, 1.0, 1.0, 0.0, //amarelo F
-		 
-		 -0.5,  0.5, -0.5, 1.0, 1.0, 0.0, //amarelo G
-		  0.5,  0.5,  0.5, 1.0, 1.0, 0.0, //amarelo F
-		 -0.5,  0.5,  0.5, 1.0, 1.0, 0.0, //amarelo H
-		 
-		 //lado azul 5 bottom face
-		-0.5, -0.5,  0.5, 0.0, 1.0, 1.0, //amarelo B
-		 0.5, -0.5,  0.5, 0.0, 1.0, 1.0, //roxo d
-		 0.5, -0.5, -0.5, 0.0, 1.0, 1.0, //verde cinza C
-
-		 -0.5, -0.5, 0.5, 0.0, 1.0, 1.0, //amarelo B
-		  0.5, -0.5, -0.5, 0.0, 1.0, 1.0, //roxo C
-		 -0.5, -0.5, -0.5, 0.0, 1.0, 1.0, //amarelo a
+		-0.5, -0.5, -0.5, 
+		 0.5,  0.5, -0.5, 
+		-0.5,  0.5, -0.5,
 	};
 
 	GLuint VBO, VAO;
@@ -389,12 +403,12 @@ int setupGeometry()
 	// Deslocamento a partir do byte zero 
 	
 	//Atributo posição (x, y, z)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 
 	//Atributo cor (r, g, b)
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
+	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
+	//glEnableVertexAttribArray(1);
 
 
 	// Observe que isso é permitido, a chamada para glVertexAttribPointer registrou o VBO como o objeto de buffer de vértice 
