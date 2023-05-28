@@ -64,6 +64,8 @@ bool rotateX = false, rotateY = false, rotateZ = false;
 // Parâmetros escala
 float scaleLevel = 0.5f;
 
+int verticesSize = 0;
+
 // Parâmetros translação
 GLfloat translateX = 0.0f;
 GLfloat translateY = 0.0f;
@@ -94,48 +96,6 @@ int main()
 
 	glEnable(GL_DEPTH_TEST);
 
-	string v;
-
-	std::vector<GLfloat> vObj;
-
-	ifstream file("../Arquivos/inicial.obj");
-
-	if (!file.is_open()) {
-		std::cout << "Failed to open the file." << std::endl;
-		return 1; // Exit the program
-	}
-
-	std::string line;
-
-	while (std::getline(file, line)) {
-		if (line.length() > 0 && line[0] == 'v') {
-			std::cout << "line:" + line << std::endl;
-
-			std::stringstream ss(line);
-
-			// Read and discard the prefix "v"
-			std::string prefix;
-			ss >> prefix;
-
-			GLfloat value;
-			while (ss >> value) {
-				vObj.push_back(value);
-			}
-		}
-	}
-
-	// Print the extracted float values
-	for (const auto& floatValue : vObj) {
-		std::cout << floatValue << " ";
-	}
-	std::cout << std::endl;
-
-
-	file.close();
-
-	
-
-
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
@@ -155,12 +115,12 @@ int main()
 		// Poligono Preenchido - GL_TRIANGLES
 
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glDrawArrays(GL_TRIANGLES, 0, verticesSize);
 
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
 
-		glDrawArrays(GL_POINTS, 0, 6);
+		glDrawArrays(GL_POINTS, 0, verticesSize);
 		glBindVertexArray(0);
 
 		// Troca os buffers da tela
@@ -365,16 +325,46 @@ int setupGeometry()
 	// sequencial, já visando mandar para o VBO (Vertex Buffer Objects)
 	// Cada atributo do vértice (coordenada, cores, coordenadas de textura, normal, etc)
 	// Pode ser arazenado em um VBO único ou em VBOs separados
-	GLfloat vertices[] = {
-		//lado verde 6 front face
-		-0.5, -0.5, -0.5, 
-		 0.5, -0.5, -0.5, 
-		 0.5,  0.5, -0.5,
 
-		-0.5, -0.5, -0.5, 
-		 0.5,  0.5, -0.5, 
-		-0.5,  0.5, -0.5,
-	};
+	string v;
+
+	std::vector<GLfloat> vertices;
+
+	ifstream file("../Arquivos/suzzaneTri.obj");
+
+	if (!file.is_open()) {
+		std::cout << "Failed to open the file." << std::endl;
+		return 1; // Exit the program
+	}
+	
+	std::string line;
+
+	// v vai ate linha 31662
+	// v inicia 5
+	
+	while (std::getline(file, line)) {
+		if (line.length() > 0 && line[0] == 'v' && line[1] == ' ') {
+
+			std::istringstream iss(line);
+
+			// Read and discard the prefix "v"
+			std::string prefix;
+			iss >> prefix;
+
+			GLfloat value;
+			
+			glm::vec3 temp_vertices;
+			iss >> temp_vertices.x >> temp_vertices.y >> temp_vertices.z;
+			vertices.push_back(temp_vertices.x);
+			vertices.push_back(temp_vertices.y);
+			vertices.push_back(temp_vertices.z);
+		}
+	}
+
+	file.close();
+
+	verticesSize = std::floor(vertices.size() / 3.0);
+	std::cout << verticesSize << std::endl;
 
 	GLuint VBO, VAO;
 
@@ -385,7 +375,7 @@ int setupGeometry()
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
 	//Envia os dados do array de floats para o buffer da OpenGl
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STATIC_DRAW);
 
 	//Geração do identificador do VAO (Vertex Array Object)
 	glGenVertexArrays(1, &VAO);

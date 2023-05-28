@@ -301,6 +301,8 @@ int setupGeometry()
 
 	};
 
+	std::cout << vertices << " ";
+
 	GLuint VBO, VAO;
 
 	//Geração do identificador do VBO
