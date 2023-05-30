@@ -21,59 +21,57 @@ using namespace std;
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+// Function declarations
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
-
 void resetAllRotate();
-
-void rotateAll(glm::mat4 &model);
-
-void setupTransformacoes(glm::mat4 &model);
-
+void rotateAll(glm::mat4& model);
+void setupTransformacoes(glm::mat4& model);
 int setupShader();
-GLuint setupGeometry();
+GLuint setupGeometry(string);
+void stupWindow(GLFWwindow*& window);
+void readFromObj(std::string path, std::vector<glm::vec3>& out_vertices, std::vector<glm::vec2>& out_textures, std::vector<glm::vec3>& out_normais);
 
-void stupWindow(GLFWwindow* &window);
+// Shader sources
+const GLchar* vertexShaderSource = R"(
+    #version 400
+    layout (location = 0) in vec3 position;
+    layout (location = 1) in vec3 color;
+    uniform mat4 model;
+    out vec4 finalColor;
+    void main()
+    {
+        // ... additional lines of code here
+        gl_Position = model * vec4(position, 1.0);
+        finalColor = vec4(color, 1.0);
+    }
+)";
 
-void readFromObj(string path,
-	std::vector<glm::vec3> &out_vertices,
-	std::vector<glm::vec2> &out_textures,
-	std::vector<glm::vec3> &out_normais);
-
-// Código fonte do Vertex Shader (em GLSL): ainda hardcoded
-const GLchar* vertexShaderSource = "#version 400\n"
-"layout (location = 0) in vec3 position;\n"
-"layout (location = 1) in vec3 color;\n"
-"uniform mat4 model;\n"
-"out vec4 finalColor;\n"
-"void main()\n"
-"{\n"
-//...pode ter mais linhas de código aqui!
-"gl_Position = model * vec4(position, 1.0);\n"
-"finalColor = vec4(color, 1.0);\n"
-"}\0";
-
-//Códifo fonte do Fragment Shader (em GLSL): ainda hardcoded
-const GLchar* fragmentShaderSource = "#version 450\n"
-"in vec4 finalColor;\n"
-"out vec4 color;\n"
-"void main()\n"
-"{\n"
-"color = finalColor;\n"
-"}\n\0";
+const GLchar* fragmentShaderSource = R"(
+    #version 450
+    in vec4 finalColor;
+    out vec4 color;
+    void main()
+    {
+        color = finalColor;
+    }
+)";
 
 // Window size
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 800;
 
-// Parâmetros rotação
-bool rotateX = false, rotateY = false, rotateZ = false;
+// Rotation parameters
+bool rotateX = false;
+bool rotateY = false;
+bool rotateZ = false;
 
-// Parâmetros escala
+// Scale parameter
 float scaleLevel = 0.5f;
 
+// Number of vertices
 int verticesSize = 0;
 
-// Parâmetros translação
+// Translation parameters
 GLfloat translateX = 0.0f;
 GLfloat translateY = 0.0f;
 GLfloat translateZ = 0.0f;
@@ -81,7 +79,7 @@ GLfloat translateZ = 0.0f;
 int main()
 {
 	GLFWwindow* window;
-	
+
 	stupWindow(window);
 
 	// Definindo as dimens�es da viewport com as mesmas dimens�es da janela da aplica��o
@@ -93,13 +91,13 @@ int main()
 	GLuint shaderID = setupShader();
 
 	// Gerando um buffer simples, com a geometria de um tri�ngulo
-	GLuint VAO = setupGeometry();
+	GLuint VAO = setupGeometry("../../Arquivos/suzanneTri.obj");
 
 	glUseProgram(shaderID);
 
 	glm::mat4 model = glm::mat4(1); //matriz identidade;
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
-	
+
 	model = glm::rotate(model, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
 
@@ -124,12 +122,12 @@ int main()
 		// Poligono Preenchido - GL_TRIANGLES
 
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, verticesSize/2);
+		glDrawArrays(GL_TRIANGLES, 0, verticesSize / 2);
 
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
 
-		glDrawArrays(GL_POINTS, 0, verticesSize/6);
+		glDrawArrays(GL_POINTS, 0, verticesSize / 6);
 		glBindVertexArray(0);
 
 		// Troca os buffers da tela
@@ -142,9 +140,7 @@ int main()
 	return 0;
 }
 
-void setupTransformacoes(glm::mat4 &model) {
-	float angle = (GLfloat)glfwGetTime();
-
+void setupTransformacoes(glm::mat4& model) {
 	rotateAll(model);
 
 	model = glm::translate(model, glm::vec3(translateX, translateY, translateZ));
@@ -152,7 +148,7 @@ void setupTransformacoes(glm::mat4 &model) {
 	model = glm::scale(model, glm::vec3(scaleLevel, scaleLevel, scaleLevel));
 }
 
-void stupWindow(GLFWwindow* &window) {
+void stupWindow(GLFWwindow*& window) {
 	glfwInit();
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -169,14 +165,14 @@ void stupWindow(GLFWwindow* &window) {
 		std::cout << "Failed to initialize GLAD" << std::endl;
 	}
 
-	// Obtendo as informa��es de vers�o
+	// Obtendo as informações de versão
 	const GLubyte* renderer = glGetString(GL_RENDERER); /* get renderer string */
 	const GLubyte* version = glGetString(GL_VERSION); /* version as a string */
 	cout << "Renderer: " << renderer << endl;
 	cout << "OpenGL version supported " << version << endl;
 }
 
-void rotateAll(glm::mat4 &model) {
+void rotateAll(glm::mat4& model) {
 	float angle = (GLfloat)glfwGetTime();
 
 	model = glm::mat4(1);
@@ -184,80 +180,86 @@ void rotateAll(glm::mat4 &model) {
 	if (rotateX)
 	{
 		model = glm::rotate(model, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-
 	}
 	else if (rotateY)
 	{
 		model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-
 	}
 	else if (rotateZ)
 	{
 		model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
-
 	}
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	//Escala
-	if (key == GLFW_KEY_T && action == GLFW_PRESS)
-	{
-		scaleLevel += 0.1f;
-	}
-	else if (key == GLFW_KEY_R && action == GLFW_PRESS)
-	{
-		scaleLevel -= 0.1f;
-	}
+	const float scaleStep = 0.1f;
+	const float translateStep = 0.01f;
 
-	//Rotação
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GL_TRUE);
-
-	if ((key == GLFW_KEY_X) && action == GLFW_PRESS)
+	// Scale
+	if (action == GLFW_PRESS)
 	{
-		resetAllRotate();
-		rotateX = true;
+		if (key == GLFW_KEY_T)
+		{
+			scaleLevel += scaleStep;
+		}
+		else if (key == GLFW_KEY_R) 
+		{
+			scaleLevel -= scaleStep;
+		}
 	}
 
-	if ((key == GLFW_KEY_Y) && action == GLFW_PRESS)
+	// Rotation
+	if (action == GLFW_PRESS)
 	{
 		resetAllRotate();
-		rotateY = true;
+
+		if (key == GLFW_KEY_X)
+		{
+			rotateX = true;
+		}
+		else if (key == GLFW_KEY_Y)
+		{
+			rotateY = true;
+		}
+		else if (key == GLFW_KEY_Z)
+		{
+			rotateZ = true;
+		}
 	}
 
-	if ((key == GLFW_KEY_Z)&& action == GLFW_PRESS)
-	{
-		resetAllRotate();
-		rotateZ = true;
-	}
-
-	// Translação
+	// Translation
 	if (action == GLFW_PRESS || action == GLFW_REPEAT)
 	{
 		switch (key)
 		{
 		case GLFW_KEY_A:
-			translateX -= 0.01f;
+			translateX -= translateStep;
 			break;
 		case GLFW_KEY_D:
-			translateX += 0.01f;
+			translateX += translateStep;
 			break;
 		case GLFW_KEY_W:
-			translateY += 0.01f;
+			translateY += translateStep;
 			break;
 		case GLFW_KEY_S:
-			translateY -= 0.01f;
+			translateY -= translateStep;
 			break;
 		case GLFW_KEY_I:
-			translateZ += 0.01f;
+			translateZ += translateStep;
 			break;
 		case GLFW_KEY_J:
-			translateZ -= 0.01f;
+			translateZ -= translateStep;
 			break;
 		default:
 			break;
 		}
+	}
+
+	// Close window
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	{
+		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
 }
 
@@ -320,7 +322,7 @@ int setupShader()
 // Apenas atributo coordenada nos vértices
 // 1 VBO com as coordenadas, VAO com apenas 1 ponteiro para atributo
 // A função retorna o identificador do VAO
-GLuint setupGeometry()
+GLuint setupGeometry(string filePath)
 {
 	// Aqui setamos as coordenadas x, y e z do triângulo e as armazenamos de forma
 	// sequencial, já visando mandar para o VBO (Vertex Buffer Objects)
@@ -330,14 +332,15 @@ GLuint setupGeometry()
 	std::vector<glm::vec3> vetNormal;
 	std::vector<glm::vec2> vetTexturas;
 	std::vector<GLfloat> vertices;
-		
-	readFromObj("../../Arquivos/suzanneTri.obj", vetVertices, vetTexturas, vetNormal);
 
-	std::array<GLfloat, 3> cor1 = { 1, 0.647, 0.694 };  // 255 165 177
-	std::array<GLfloat, 3> cor2 = { 0.741, 0.129, 0.415 };  // 189 33 106
-	std::array<GLfloat, 3> cor3 = { 0.949, 0.78, 0.79 };  // 242 199 203
-	std::array<GLfloat, 3> cor4 = { 0.972, 0.407, 0.584 };  // 248 104 149
-	std::array<GLfloat, 3> cor5 = { 1, 0.058, 0.502 };  // 255 15 128
+	readFromObj(filePath, vetVertices, vetTexturas, vetNormal);
+
+	//inicialização cores
+	std::array<GLfloat, 3> cor1 = { 1.000f, 0.647f, 0.694f };  // 255 165 177
+	std::array<GLfloat, 3> cor2 = { 0.741f, 0.129f, 0.415f };  // 189 33 106
+	std::array<GLfloat, 3> cor3 = { 0.949f, 0.780f, 0.790f };  // 242 199 203
+	std::array<GLfloat, 3> cor4 = { 0.972f, 0.407f, 0.584f };  // 248 104 149
+	std::array<GLfloat, 3> cor5 = { 1.000f, 0.058f, 0.502f };  // 255 15 128
 
 	std::vector<std::array<GLfloat, 3>> cores;
 	cores.push_back(cor1);
@@ -345,10 +348,11 @@ GLuint setupGeometry()
 	cores.push_back(cor3);
 	cores.push_back(cor4);
 	cores.push_back(cor5);
-	
+
 	int cor = 0;
 
-	for (int i = 0; i < vetVertices.size(); i++)
+	//mapeamento dos triângulos
+	for (unsigned int i = 0; i < vetVertices.size(); i++)
 	{
 		vertices.push_back(vetVertices[i].x);
 		vertices.push_back(vetVertices[i].y);
@@ -384,7 +388,7 @@ GLuint setupGeometry()
 	// Vincula (bind) o VAO primeiro, e em seguida  conecta e seta o(s) buffer(s) de vértices
 	// e os ponteiros para os atributos 
 	glBindVertexArray(VAO);
-	
+
 	//Para cada atributo do vertice, criamos um "AttribPointer" (ponteiro para o atributo), indicando: 
 	// Localização no shader * (a localização dos atributos devem ser correspondentes no layout especificado no vertex shader)
 	// Numero de valores que o atributo tem (por ex, 3 coordenadas xyz) 
@@ -392,13 +396,13 @@ GLuint setupGeometry()
 	// Se está normalizado (entre zero e um)
 	// Tamanho em bytes 
 	// Deslocamento a partir do byte zero 
-	
+
 	//Atributo posição (x, y, z)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 
 	//Atributo cor (r, g, b)
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
 
 
@@ -413,9 +417,9 @@ GLuint setupGeometry()
 }
 
 void readFromObj(string path,
-	std::vector<glm::vec3> &out_vertices,
-	std::vector<glm::vec2> &out_textures,
-	std::vector<glm::vec3> &out_normais) {
+	std::vector<glm::vec3>& out_vertices,
+	std::vector<glm::vec2>& out_textures,
+	std::vector<glm::vec3>& out_normais) {
 
 	std::ifstream file(path);
 
