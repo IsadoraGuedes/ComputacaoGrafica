@@ -24,13 +24,19 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void resetAllRotate();
 
-glm::mat4 rotateAll(glm::mat4);
-glm::mat4 setupTransformacoes(glm::mat4);
+void rotateAll(glm::mat4 &model);
+
+void setupTransformacoes(glm::mat4 &model);
 
 int setupShader();
-int setupGeometry();
+GLuint setupGeometry();
 
-GLFWwindow* stupWindow();
+void stupWindow(GLFWwindow* &window);
+
+void readFromObj(string path,
+	std::vector<glm::vec3> &out_vertices,
+	std::vector<glm::vec2> &out_textures,
+	std::vector<glm::vec3> &out_normais);
 
 // Código fonte do Vertex Shader (em GLSL): ainda hardcoded
 const GLchar* vertexShaderSource = "#version 400\n"
@@ -73,7 +79,9 @@ GLfloat translateZ = 0.0f;
 
 int main()
 {
-	GLFWwindow* window = stupWindow();
+	GLFWwindow* window;
+	
+	stupWindow(window);
 
 	// Definindo as dimens�es da viewport com as mesmas dimens�es da janela da aplica��o
 	int width, height;
@@ -107,7 +115,7 @@ int main()
 		glLineWidth(10);
 		glPointSize(20);
 
-		model = setupTransformacoes(model);
+		setupTransformacoes(model);
 
 		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
 
@@ -115,7 +123,7 @@ int main()
 		// Poligono Preenchido - GL_TRIANGLES
 
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, verticesSize);
+		glDrawArrays(GL_TRIANGLES, 0, verticesSize/3);
 
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
@@ -133,28 +141,24 @@ int main()
 	return 0;
 }
 
-glm::mat4 setupTransformacoes(glm::mat4 model) {
+void setupTransformacoes(glm::mat4 &model) {
 	float angle = (GLfloat)glfwGetTime();
 
-	model = glm::mat4(1);
-
-	model = rotateAll(model);
+	rotateAll(model);
 
 	model = glm::translate(model, glm::vec3(translateX, translateY, translateZ));
 
 	model = glm::scale(model, glm::vec3(scaleLevel, scaleLevel, scaleLevel));
-
-	return model;
 }
 
-GLFWwindow* stupWindow() {
+void stupWindow(GLFWwindow* &window) {
 	glfwInit();
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Atividade Vicencial 1", nullptr, nullptr);
+	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Atividade Vicencial 1", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 
 	glfwSetKeyCallback(window, key_callback);
@@ -169,11 +173,9 @@ GLFWwindow* stupWindow() {
 	const GLubyte* version = glGetString(GL_VERSION); /* version as a string */
 	cout << "Renderer: " << renderer << endl;
 	cout << "OpenGL version supported " << version << endl;
-
-	return window;
 }
 
-glm::mat4 rotateAll(glm::mat4 model) {
+void rotateAll(glm::mat4 &model) {
 	float angle = (GLfloat)glfwGetTime();
 
 	model = glm::mat4(1);
@@ -193,8 +195,6 @@ glm::mat4 rotateAll(glm::mat4 model) {
 		model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
 
 	}
-
-	return model;
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
@@ -319,52 +319,27 @@ int setupShader()
 // Apenas atributo coordenada nos vértices
 // 1 VBO com as coordenadas, VAO com apenas 1 ponteiro para atributo
 // A função retorna o identificador do VAO
-int setupGeometry()
+GLuint setupGeometry()
 {
 	// Aqui setamos as coordenadas x, y e z do triângulo e as armazenamos de forma
 	// sequencial, já visando mandar para o VBO (Vertex Buffer Objects)
 	// Cada atributo do vértice (coordenada, cores, coordenadas de textura, normal, etc)
 	// Pode ser arazenado em um VBO único ou em VBOs separados
-
-	string v;
-
+	std::vector<glm::vec3> vetVertices;
+	std::vector<glm::vec3> vetNormal;
+	std::vector<glm::vec2> vetTexturas;
 	std::vector<GLfloat> vertices;
+		
+	readFromObj("../Arquivos/suzanneTri.obj", vetVertices, vetTexturas, vetNormal);
 
-	ifstream file("../Arquivos/suzzaneTri.obj");
-
-	if (!file.is_open()) {
-		std::cout << "Failed to open the file." << std::endl;
-		return 1; // Exit the program
-	}
-	
-	std::string line;
-
-	// v vai ate linha 31662
-	// v inicia 5
-	
-	while (std::getline(file, line)) {
-		if (line.length() > 0 && line[0] == 'v' && line[1] == ' ') {
-
-			std::istringstream iss(line);
-
-			// Read and discard the prefix "v"
-			std::string prefix;
-			iss >> prefix;
-
-			GLfloat value;
-			
-			glm::vec3 temp_vertices;
-			iss >> temp_vertices.x >> temp_vertices.y >> temp_vertices.z;
-			vertices.push_back(temp_vertices.x);
-			vertices.push_back(temp_vertices.y);
-			vertices.push_back(temp_vertices.z);
-		}
+	for (int i = 0; i < vetVertices.size(); i++)
+	{
+		vertices.push_back(vetVertices[i].x);
+		vertices.push_back(vetVertices[i].y);
+		vertices.push_back(vetVertices[i].z);
 	}
 
-	file.close();
-
-	verticesSize = std::floor(vertices.size() / 3.0);
-	std::cout << verticesSize << std::endl;
+	verticesSize = vertices.size();
 
 	GLuint VBO, VAO;
 
@@ -409,4 +384,84 @@ int setupGeometry()
 	glBindVertexArray(0);
 
 	return VAO;
+}
+
+void readFromObj(string path,
+	std::vector<glm::vec3> &out_vertices,
+	std::vector<glm::vec2> &out_textures,
+	std::vector<glm::vec3> &out_normais) {
+
+	std::ifstream file(path);
+
+	if (!file.is_open()) {
+		std::cout << "Failed to open the file." << std::endl;
+	}
+
+	std::vector<unsigned int> verticesIndices, texturesIndices, normalIndices;
+	std::vector<glm::vec3> temp_vertices;
+	std::vector<glm::vec2> temp_textures;
+	std::vector<glm::vec3> temp_normais;
+
+	std::string line;
+
+	while (std::getline(file, line)) {
+		if (line.length() > 0) {
+
+			std::istringstream iss(line);
+
+			std::string prefix;
+			iss >> prefix;
+
+			if (prefix == "v") {
+
+				glm::vec3 values;
+				iss >> values.x >> values.y >> values.z;
+				temp_vertices.push_back(values);
+			}
+			else if (prefix == "vt")
+			{
+				glm::vec2 values;
+				iss >> values.x >> values.y;
+				temp_textures.push_back(values);
+			}
+			else if (prefix == "vn")
+			{
+				glm::vec3 values;
+				iss >> values.x >> values.y >> values.z;
+				temp_normais.push_back(values);
+			}
+			else if (prefix == "f")
+			{
+				unsigned int vertexIndex[3], textIndex[3], normalIndex[3];
+				char slash;
+
+				for (int i = 0; i < 3; ++i)
+				{
+					iss >> vertexIndex[i] >> slash >> textIndex[i] >> slash >> normalIndex[i];
+					verticesIndices.push_back(vertexIndex[i]);
+					texturesIndices.push_back(textIndex[i]);
+					normalIndices.push_back(normalIndex[i]);
+				}
+			}
+		}
+	}
+
+	std::cout << temp_vertices.size() << std::endl;
+
+	for (unsigned int i = 0; i < verticesIndices.size(); ++i)
+	{
+		unsigned int vertexIndex = verticesIndices[i];
+		unsigned int textIndex = texturesIndices[i];
+		unsigned int normalIndex = normalIndices[i];
+
+		glm::vec3 vertex = temp_vertices[vertexIndex - 1];
+		glm::vec2 texture = temp_textures[textIndex - 1];
+		glm::vec3 normal = temp_normais[normalIndex - 1];
+
+		out_vertices.push_back(vertex);
+		out_textures.push_back(texture);
+		out_normais.push_back(normal);
+	}
+
+	file.close();
 }
