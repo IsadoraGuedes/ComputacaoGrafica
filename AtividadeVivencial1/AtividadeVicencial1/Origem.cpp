@@ -11,6 +11,7 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <array>
 
 using namespace std;
 
@@ -123,12 +124,12 @@ int main()
 		// Poligono Preenchido - GL_TRIANGLES
 
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, verticesSize/3);
+		glDrawArrays(GL_TRIANGLES, 0, verticesSize/2);
 
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
 
-		glDrawArrays(GL_POINTS, 0, verticesSize);
+		glDrawArrays(GL_POINTS, 0, verticesSize/6);
 		glBindVertexArray(0);
 
 		// Troca os buffers da tela
@@ -332,11 +333,36 @@ GLuint setupGeometry()
 		
 	readFromObj("../Arquivos/suzanneTri.obj", vetVertices, vetTexturas, vetNormal);
 
+	std::array<GLfloat, 3> cor1 = { 1, 0.647, 0.694 };  // 255 165 177
+	std::array<GLfloat, 3> cor2 = { 0.741, 0.129, 0.415 };  // 189 33 106
+	std::array<GLfloat, 3> cor3 = { 0.949, 0.78, 0.79 };  // 242 199 203
+	std::array<GLfloat, 3> cor4 = { 0.972, 0.407, 0.584 };  // 248 104 149
+	std::array<GLfloat, 3> cor5 = { 1, 0.058, 0.502 };  // 255 15 128
+
+	std::vector<std::array<GLfloat, 3>> cores;
+	cores.push_back(cor1);
+	cores.push_back(cor2);
+	cores.push_back(cor3);
+	cores.push_back(cor4);
+	cores.push_back(cor5);
+	
+	int cor = 0;
+
 	for (int i = 0; i < vetVertices.size(); i++)
 	{
 		vertices.push_back(vetVertices[i].x);
 		vertices.push_back(vetVertices[i].y);
 		vertices.push_back(vetVertices[i].z);
+
+		vertices.push_back(cores[cor][0]);
+		vertices.push_back(cores[cor][1]);
+		vertices.push_back(cores[cor][2]);
+
+		cor++;
+
+		if (cor == 5) {
+			cor = 0;
+		}
 	}
 
 	verticesSize = vertices.size();
@@ -368,12 +394,12 @@ GLuint setupGeometry()
 	// Deslocamento a partir do byte zero 
 	
 	//Atributo posição (x, y, z)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 
 	//Atributo cor (r, g, b)
-	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
-	//glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
 
 
 	// Observe que isso é permitido, a chamada para glVertexAttribPointer registrou o VBO como o objeto de buffer de vértice 
