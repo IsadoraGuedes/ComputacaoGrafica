@@ -331,7 +331,7 @@ GLuint setupGeometry()
 	std::vector<glm::vec2> vetTexturas;
 	std::vector<GLfloat> vertices;
 		
-	readFromObj("../Arquivos/suzanneTri.obj", vetVertices, vetTexturas, vetNormal);
+	readFromObj("../../Arquivos/suzanneTri.obj", vetVertices, vetTexturas, vetNormal);
 
 	std::array<GLfloat, 3> cor1 = { 1, 0.647, 0.694 };  // 255 165 177
 	std::array<GLfloat, 3> cor2 = { 0.741, 0.129, 0.415 };  // 189 33 106

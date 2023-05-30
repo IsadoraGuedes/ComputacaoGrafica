@@ -18,7 +18,15 @@ Autora: Isadora Soares Guedes
 - Adiciona operação escala teclas R e T
 - Cria duas instâncias de cubo utilizando triângulos
 
-![imagem1](/Modulo2/imagens/Captura%20de%20tela%202023-05-26%20222451.png)
-![imagem2](/Modulo2/imagens/Captura%20de%20tela%202023-05-26%20222517.png)
-![imagem3](/Modulo2/imagens/Captura%20de%20tela%202023-05-26%20222532.png)
-![imagem4](/Modulo2/imagens/Captura%20de%20tela%202023-05-26%20222551.png)
+![imagem1](/Modulo2/imagens/cubo_front.png)
+![imagem2](/Modulo2/imagens/cubo_rotacao.png)
+![imagem3](/Modulo2/imagens/cubo_rotacao_laranja.png)
+![imagem4](/Modulo2/imagens/cubo_rotacao_roxo.png)
+
+## Entrega da Atividade Vicencial 1
+
+- Adiciona leitura de arquivo .obj
+- Adiciona leitura do arquivo suzanneTri.obj com cores fixas
+
+![imagem1](/AtividadeVivencial1/Arquivos/suzanne_print_frente.png)
+![imagem1](/AtividadeVivencial1/Arquivos/suzzane_print_lado.png)
