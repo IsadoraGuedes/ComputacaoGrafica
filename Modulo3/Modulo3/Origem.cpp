@@ -21,6 +21,11 @@ using namespace std;
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+//stb_image
+//#include "stb_image.h"
+
+// Nossa classe que armazena as infos dos shaders
+//#include "Shader.h"
 
 // Function declarations
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -28,6 +33,7 @@ void resetAllRotate();
 void rotateAll(glm::mat4& model);
 void setupTransformacoes(glm::mat4& model);
 int setupShader();
+int loadTexture(string path);
 GLuint setupGeometry(string);
 void stupWindow(GLFWwindow*& window);
 void readFromObj(std::string path, std::vector<glm::vec3>& out_vertices, std::vector<glm::vec2>& out_textures, std::vector<glm::vec3>& out_normais);
@@ -197,39 +203,46 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	const float scaleStep = 0.1f;
 	const float translateStep = 0.01f;
 
-	// Scale
-	if (action == GLFW_PRESS)
+
+	//Escala ---------------
+
+	if (key == GLFW_KEY_T && action == GLFW_PRESS)
 	{
-		if (key == GLFW_KEY_T)
-		{
-			scaleLevel += scaleStep;
-		}
-		else if (key == GLFW_KEY_R)
-		{
-			scaleLevel -= scaleStep;
-		}
+		// Aumenta scale
+		scaleLevel += scaleStep;
+	}
+	else if (key == GLFW_KEY_R && action == GLFW_PRESS)
+	{
+		// Diminui scale
+		scaleLevel -= scaleStep;
+		//zoomLevel = glm::max(zoomLevel, 0.5f);
 	}
 
-	// Rotation
-	if (action == GLFW_PRESS)
+	//Rotação----------------------
+
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, GL_TRUE);
+
+	if ((key == GLFW_KEY_X) && action == GLFW_PRESS)
 	{
 		resetAllRotate();
-
-		if (key == GLFW_KEY_X)
-		{
-			rotateX = true;
-		}
-		else if (key == GLFW_KEY_Y)
-		{
-			rotateY = true;
-		}
-		else if (key == GLFW_KEY_Z)
-		{
-			rotateZ = true;
-		}
+		rotateX = true;
 	}
 
-	// Translation
+	if ((key == GLFW_KEY_Y) && action == GLFW_PRESS)
+	{
+		resetAllRotate();
+		rotateY = true;
+	}
+
+	if ((key == GLFW_KEY_Z) && action == GLFW_PRESS)
+	{
+		resetAllRotate();
+		rotateZ = true;
+	}
+
+	// Translação -----------------
+
 	if (action == GLFW_PRESS || action == GLFW_REPEAT)
 	{
 		switch (key)
@@ -257,10 +270,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		}
 	}
 
-	// Close window
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	// Resetar visualização
+	if ((key == GLFW_KEY_P) && action == GLFW_PRESS)
 	{
-		glfwSetWindowShouldClose(window, GL_TRUE);
+		resetAllRotate();
+		translateX = 0.0f;
+		translateY = 0.0f;
+		translateZ = 0.0f;
+		scaleLevel = 0.5f;
 	}
 }
 
@@ -417,7 +434,48 @@ GLuint setupGeometry(string filePath)
 	return VAO;
 }
 
+int loadTexture(string path)
+{
+	GLuint texID;
 
+	// Gera o identificador da textura na memória 
+	glGenTextures(1, &texID);
+	glBindTexture(GL_TEXTURE_2D, texID);
+
+	//Ajusta os parâmetros de wrapping e filtering
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	//Carregamento da imagem
+	int width, height, nrChannels;/*
+	unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
+
+	if (data)
+	{
+		if (nrChannels == 3) //jpg, bmp
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		}
+		else //png
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		}
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+
+	stbi_image_free(data);
+	*/
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return texID;
+}
 
 void readFromObj(string path,
 	std::vector<glm::vec3>& out_vertices,
