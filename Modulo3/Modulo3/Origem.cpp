@@ -22,10 +22,10 @@ using namespace std;
 #include <glm/gtc/type_ptr.hpp>
 
 //stb_image
-//#include "stb_image.h"
+#include "stb_image.h"
 
 // Nossa classe que armazena as infos dos shaders
-//#include "Shader.h"
+#include "Shader.h"
 
 // Function declarations
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
