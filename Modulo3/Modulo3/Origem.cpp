@@ -40,27 +40,39 @@ void readFromObj(std::string path, std::vector<glm::vec3>& out_vertices, std::ve
 
 // Shader sources
 const GLchar* vertexShaderSource = R"(
-    #version 400
+    #version 450
     layout (location = 0) in vec3 position;
     layout (location = 1) in vec3 color;
+	layout (location = 2) in vec2 tex_coord;
+
+	out vec4 vertexColor2;
+	out vec2 texCoord;
+
     uniform mat4 model;
-    out vec4 finalColor;
+	uniform mat4 projection;
+
     void main()
     {
         // ... additional lines of code here
-        gl_Position = model * vec4(position, 1.0);
-        finalColor = vec4(color, 1.0);
+        gl_Position = projection * model * vec4(position, 1.0f);
+        texCoord = vec2(tex_coord.x, tex_coord.y);
     }
 )";
 
 const GLchar* fragmentShaderSource = R"(
     #version 450
-    in vec4 finalColor;
-    out vec4 color;
-    void main()
-    {
-        color = finalColor;
-    }
+    in vec3 vertexColor;
+	in vec2 texCoord;
+
+	out vec4 color;
+    
+	// pixels da textura
+	uniform sampler2D tex_buffer;
+	
+	void main()
+	{
+		color = texture(tex_buffer, texCoord);
+	}
 )";
 
 // Window size
@@ -97,10 +109,16 @@ int main()
 	// Compilando e buildando o programa de shader
 	GLuint shaderID = setupShader();
 
+	//Carregando uma textura e armazenando o identificador na memória
+	GLuint texID = loadTexture("../../Arquivos/textures/mario.png");
+
+
 	// Gerando um buffer simples, com a geometria de um tri�ngulo
 	GLuint VAO = setupGeometry("../../Arquivos/cube.obj");
 
 	glUseProgram(shaderID);
+
+	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
 
 	glm::mat4 model = glm::mat4(1); //matriz identidade;
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
@@ -125,17 +143,23 @@ int main()
 
 		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
 
+		//Ativando o primeiro buffer de textura (0) e conectando ao identificador gerado
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texID);
+
 		// Chamada de desenho - drawcall
 		// Poligono Preenchido - GL_TRIANGLES
 
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, verticesSize / 2);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
 
-		glDrawArrays(GL_POINTS, 0, verticesSize / 6);
+		glDrawArrays(GL_TRIANGLES, 0, verticesSize/8*3);
+
 		glBindVertexArray(0);
+		glBindTexture(GL_TEXTURE_2D, 0); //unbind da textura
 
 		// Troca os buffers da tela
 		glfwSwapBuffers(window);
@@ -162,7 +186,7 @@ void stupWindow(GLFWwindow*& window) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Atividade Vicencial 1", nullptr, nullptr);
+	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Modulo 3", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 
 	glfwSetKeyCallback(window, key_callback);
@@ -380,12 +404,24 @@ GLuint setupGeometry(string filePath)
 		vertices.push_back(cores[cor][1]);
 		vertices.push_back(cores[cor][2]);
 
+		vertices.push_back(vetTexturas[i].x);
+		vertices.push_back(vetTexturas[i].y);
+
 		cor++;
 
 		if (cor == 5) {
 			cor = 0;
 		}
 	}
+
+	for (int i = 0; i < vertices.size(); i++) {
+		std::cout << vertices[i] << ", ";
+
+		// Break line after every 6 positions
+		if ((i + 1) % 8 == 0)
+			std::cout << std::endl;
+	}
+
 
 	verticesSize = vertices.size();
 
@@ -416,12 +452,17 @@ GLuint setupGeometry(string filePath)
 	// Deslocamento a partir do byte zero 
 
 	//Atributo posição (x, y, z)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 
 	//Atributo cor (r, g, b)
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
+
+	// texture coord attribute
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
 
 
 	// Observe que isso é permitido, a chamada para glVertexAttribPointer registrou o VBO como o objeto de buffer de vértice 
@@ -450,7 +491,7 @@ int loadTexture(string path)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	//Carregamento da imagem
-	int width, height, nrChannels;/*
+	int width, height, nrChannels;
 	unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
 
 	if (data)
@@ -471,7 +512,7 @@ int loadTexture(string path)
 	}
 
 	stbi_image_free(data);
-	*/
+	
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return texID;
