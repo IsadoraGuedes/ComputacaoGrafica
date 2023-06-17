@@ -32,48 +32,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void resetAllRotate();
 void rotateAll(glm::mat4& model);
 void setupTransformacoes(glm::mat4& model);
-int setupShader();
 int loadTexture(string path);
 GLuint setupGeometry(string);
 void stupWindow(GLFWwindow*& window);
 void readFromObj(std::string path, std::vector<glm::vec3>& out_vertices, std::vector<glm::vec2>& out_textures, std::vector<glm::vec3>& out_normais);
-
-// Shader sources
-const GLchar* vertexShaderSource = R"(
-    #version 450
-    layout (location = 0) in vec3 position;
-    layout (location = 1) in vec3 color;
-	layout (location = 2) in vec2 tex_coord;
-
-	out vec4 vertexColor2;
-	out vec2 texCoord;
-
-    uniform mat4 model;
-	uniform mat4 projection;
-
-    void main()
-    {
-        // ... additional lines of code here
-        gl_Position = projection * model * vec4(position, 1.0f);
-        texCoord = vec2(tex_coord.x, tex_coord.y);
-    }
-)";
-
-const GLchar* fragmentShaderSource = R"(
-    #version 450
-    in vec3 vertexColor;
-	in vec2 texCoord;
-
-	out vec4 color;
-    
-	// pixels da textura
-	uniform sampler2D tex_buffer;
-	
-	void main()
-	{
-		color = texture(tex_buffer, texCoord);
-	}
-)";
 
 // Window size
 const int WINDOW_WIDTH = 800;
@@ -107,23 +69,23 @@ int main()
 	glViewport(0, 0, width, height);
 
 	// Compilando e buildando o programa de shader
-	GLuint shaderID = setupShader();
+	Shader shader("../shaders/sprite.vs", "../shaders/sprite.fs");
 
 	//Carregando uma textura e armazenando o identificador na memória
-	GLuint texID = loadTexture("../../Arquivos/textures/mario.png");
+	GLuint texID = loadTexture("../../Arquivos/textures/Cube.png");
 
 
 	// Gerando um buffer simples, com a geometria de um tri�ngulo
-	GLuint VAO = setupGeometry("../../Arquivos/cube.obj");
+	GLuint VAO = setupGeometry("../../Arquivos/CuboTextured.obj");
 
-	glUseProgram(shaderID);
+	glUseProgram(shader.ID);
 
-	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
+	glUniform1i(glGetUniformLocation(shader.ID, "tex_buffer"), 0);
 
 	glm::mat4 model = glm::mat4(1); //matriz identidade;
-	GLint modelLoc = glGetUniformLocation(shaderID, "model");
+	GLint modelLoc = glGetUniformLocation(shader.ID, "model");
 
-	model = glm::rotate(model, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::ortho(0.0, 800.0, 0.0, 600.0, -1000.0, 1000.0);
 	glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
 
 	glEnable(GL_DEPTH_TEST);
@@ -156,7 +118,7 @@ int main()
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
 
-		glDrawArrays(GL_TRIANGLES, 0, verticesSize/8*3);
+		glDrawArrays(GL_TRIANGLES, 0, verticesSize/8);
 
 		glBindVertexArray(0);
 		glBindTexture(GL_TEXTURE_2D, 0); //unbind da textura
@@ -311,59 +273,7 @@ void resetAllRotate() {
 	rotateZ = false;
 }
 
-//Esta função está basntante hardcoded - objetivo é compilar e "buildar" um programa de
-// shader simples e único neste exemplo de código
-// O código fonte do vertex e fragment shader está nos arrays vertexShaderSource e
-// fragmentShader source no iniçio deste arquivo
-// A função retorna o identificador do programa de shader
-int setupShader()
-{
-	// Vertex shader
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-	// Checando erros de compilação (exibição via log no terminal)
-	GLint success;
-	GLchar infoLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-	// Fragment shader
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-	// Checando erros de compilação (exibição via log no terminal)
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-	// Linkando os shaders e criando o identificador do programa de shader
-	GLuint shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-	// Checando por erros de linkagem
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-	}
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
 
-	return shaderProgram;
-}
-
-// Esta função está bastante harcoded - objetivo é criar os buffers que armazenam a 
-// geometria de um triângulo
-// Apenas atributo coordenada nos vértices
-// 1 VBO com as coordenadas, VAO com apenas 1 ponteiro para atributo
-// A função retorna o identificador do VAO
 GLuint setupGeometry(string filePath)
 {
 	// Aqui setamos as coordenadas x, y e z do triângulo e as armazenamos de forma
@@ -377,21 +287,6 @@ GLuint setupGeometry(string filePath)
 
 	readFromObj(filePath, vetVertices, vetTexturas, vetNormal);
 
-	//inicialização cores
-	std::array<GLfloat, 3> cor1 = { 1.000f, 0.647f, 0.694f };  // 255 165 177
-	std::array<GLfloat, 3> cor2 = { 0.741f, 0.129f, 0.415f };  // 189 33 106
-	std::array<GLfloat, 3> cor3 = { 0.949f, 0.780f, 0.790f };  // 242 199 203
-	std::array<GLfloat, 3> cor4 = { 0.972f, 0.407f, 0.584f };  // 248 104 149
-	std::array<GLfloat, 3> cor5 = { 1.000f, 0.058f, 0.502f };  // 255 15 128
-
-	std::vector<std::array<GLfloat, 3>> cores;
-	cores.push_back(cor1);
-	cores.push_back(cor2);
-	cores.push_back(cor3);
-	cores.push_back(cor4);
-	cores.push_back(cor5);
-
-	int cor = 0;
 
 	//mapeamento dos triângulos
 	for (unsigned int i = 0; i < vetVertices.size(); i++)
@@ -400,77 +295,48 @@ GLuint setupGeometry(string filePath)
 		vertices.push_back(vetVertices[i].y);
 		vertices.push_back(vetVertices[i].z);
 
-		vertices.push_back(cores[cor][0]);
-		vertices.push_back(cores[cor][1]);
-		vertices.push_back(cores[cor][2]);
+		vertices.push_back(0.5f);
+		vertices.push_back(0.5f);
+		vertices.push_back(0.5f);
 
 		vertices.push_back(vetTexturas[i].x);
 		vertices.push_back(vetTexturas[i].y);
-
-		cor++;
-
-		if (cor == 5) {
-			cor = 0;
-		}
 	}
 
-	for (int i = 0; i < vertices.size(); i++) {
+	/*for (int i = 0; i < vertices.size(); i++) {
 		std::cout << vertices[i] << ", ";
 
-		// Break line after every 6 positions
-		if ((i + 1) % 8 == 0)
-			std::cout << std::endl;
-	}
+		Break line after every 6 positions
+		//if ((i + 1) % 8 == 0)
+			//std::cout << std::endl;
+	}*/
 
 
-	verticesSize = vertices.size();
+	verticesSize = vetVertices.size();
 
-	GLuint VBO, VAO;
+	GLuint VAO, VBO;
 
-	//Geração do identificador do VBO
+	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 
-	//Faz a conexão (vincula) do buffer como um buffer de array
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-	//Envia os dados do array de floats para o buffer da OpenGl
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STATIC_DRAW);
 
-	//Geração do identificador do VAO (Vertex Array Object)
-	glGenVertexArrays(1, &VAO);
-
-	// Vincula (bind) o VAO primeiro, e em seguida  conecta e seta o(s) buffer(s) de vértices
-	// e os ponteiros para os atributos 
 	glBindVertexArray(VAO);
-
-	//Para cada atributo do vertice, criamos um "AttribPointer" (ponteiro para o atributo), indicando: 
-	// Localização no shader * (a localização dos atributos devem ser correspondentes no layout especificado no vertex shader)
-	// Numero de valores que o atributo tem (por ex, 3 coordenadas xyz) 
-	// Tipo do dado
-	// Se está normalizado (entre zero e um)
-	// Tamanho em bytes 
-	// Deslocamento a partir do byte zero 
-
-	//Atributo posição (x, y, z)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	//Atributo cor (r, g, b)
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
 
-	// texture coord attribute
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(float)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(2);
 
-
-
-	// Observe que isso é permitido, a chamada para glVertexAttribPointer registrou o VBO como o objeto de buffer de vértice 
-	// atualmente vinculado - para que depois possamos desvincular com segurança
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	// Desvincula o VAO (é uma boa prática desvincular qualquer buffer ou array para evitar bugs medonhos)
 	glBindVertexArray(0);
+
+	//glEnable(GL_DEPTH_TEST);
 
 	return VAO;
 }
