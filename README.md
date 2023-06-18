@@ -30,3 +30,12 @@ Autora: Isadora Soares Guedes
 
 ![imagem1](/AtividadeVivencial1/Arquivos/suzanne_print_frente.png)
 ![imagem1](/AtividadeVivencial1/Arquivos/suzzane_print_lado.png)
+
+
+## Entrega do Módulo 3
+
+- Adiciona leitura do arquivo mtl
+- Adiciona leitura com texturas
+
+
+![imagem1](/Modulo3/imagens/modulo3-frente.png)

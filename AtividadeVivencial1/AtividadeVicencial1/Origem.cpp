@@ -384,11 +384,32 @@ GLuint setupGeometry(string filePath)
 	return VAO;
 }
 
+std::vector<std::array<GLfloat, 3>> initCores() {
+	//inicialização cores
+	std::array<GLfloat, 3> cor1 = { 1.000f, 0.647f, 0.694f };  // 255 165 177
+	std::array<GLfloat, 3> cor2 = { 0.741f, 0.129f, 0.415f };  // 189 33 106
+	std::array<GLfloat, 3> cor3 = { 0.949f, 0.780f, 0.790f };  // 242 199 203
+	std::array<GLfloat, 3> cor4 = { 0.972f, 0.407f, 0.584f };  // 248 104 149
+	std::array<GLfloat, 3> cor5 = { 1.000f, 0.058f, 0.502f };  // 255 15 128
+
+	std::vector<std::array<GLfloat, 3>> cores;
+	cores.push_back(cor1);
+	cores.push_back(cor2);
+	cores.push_back(cor3);
+	cores.push_back(cor4);
+	cores.push_back(cor5);
+
+	return cores;
+}
+
+
 void readFromObj(string path,
 	std::vector<glm::vec3>& out_vertices,
 	std::vector<glm::vec2>& out_textures,
 	std::vector<glm::vec3>& out_normais) {
 
+	std::vector<std::array<GLfloat, 3>> cores = initCores();
+	
 	std::ifstream file(path);
 
 	if (!file.is_open()) {
@@ -401,6 +422,8 @@ void readFromObj(string path,
 	std::vector<glm::vec3> temp_normais;
 
 	std::string line;
+
+	int cor = 0;
 
 	while (std::getline(file, line)) {
 		if (line.length() > 0) {
@@ -430,17 +453,30 @@ void readFromObj(string path,
 			}
 			else if (prefix == "f")
 			{
-				unsigned int vertexIndex[3], textIndex[3], normalIndex[3];
+				unsigned int vertexIndex, textIndex, normalIndex;
 				char slash;
 
 				for (int i = 0; i < 3; ++i)
 				{
-					//1 5 6
-					iss >> vertexIndex[i] >> slash >> textIndex[i] >> slash >> normalIndex[i];
+					iss >> vertexIndex >> slash >> textIndex >> slash >> normalIndex;
 
-					out_vertices.push_back(temp_vertices[vertexIndex[i] - 1]);
-					out_textures.push_back(temp_textures[textIndex[i] - 1]);
-					out_normais.push_back(temp_normais[normalIndex[i] - 1]);
+					glm::vec3 verticess = temp_vertices[vertexIndex - 1];
+					glm::vec3 normais = temp_normais[normalIndex - 1];
+					glm::vec2 textures = temp_textures[textIndex - 1];
+
+					vertices.push_back(verticess.x);
+					vertices.push_back(verticess.y);
+					vertices.push_back(verticess.z);
+
+					vertices.push_back(cores[cor][0]);
+					vertices.push_back(cores[cor][1]);
+					vertices.push_back(cores[cor][2]);
+
+					cor++;
+
+					if (cor == 5) {
+						cor = 0;
+					}
 				}
 			}
 		}
@@ -449,39 +485,4 @@ void readFromObj(string path,
 	std::cout << temp_vertices.size() << std::endl;
 
 	file.close();
-	
-
-	//inicialização cores
-	std::array<GLfloat, 3> cor1 = { 1.000f, 0.647f, 0.694f };  // 255 165 177
-	std::array<GLfloat, 3> cor2 = { 0.741f, 0.129f, 0.415f };  // 189 33 106
-	std::array<GLfloat, 3> cor3 = { 0.949f, 0.780f, 0.790f };  // 242 199 203
-	std::array<GLfloat, 3> cor4 = { 0.972f, 0.407f, 0.584f };  // 248 104 149
-	std::array<GLfloat, 3> cor5 = { 1.000f, 0.058f, 0.502f };  // 255 15 128
-
-	std::vector<std::array<GLfloat, 3>> cores;
-	cores.push_back(cor1);
-	cores.push_back(cor2);
-	cores.push_back(cor3);
-	cores.push_back(cor4);
-	cores.push_back(cor5);
-
-	int cor = 0;
-
-	//mapeamento dos triângulos
-	for (unsigned int i = 0; i < out_vertices.size(); i++)
-	{
-		vertices.push_back(out_vertices[i].x);
-		vertices.push_back(out_vertices[i].y);
-		vertices.push_back(out_vertices[i].z);
-
-		vertices.push_back(cores[cor][0]);
-		vertices.push_back(cores[cor][1]);
-		vertices.push_back(cores[cor][2]);
-
-		cor++;
-
-		if (cor == 5) {
-			cor = 0;
-		}
-	}
 }
