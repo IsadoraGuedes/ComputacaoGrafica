@@ -34,7 +34,7 @@ void rotateAll(glm::mat4& model);
 void setupTransformacoes(glm::mat4& model);
 int loadTexture(string path);
 GLuint setupGeometry(string);
-void stupWindow(GLFWwindow*& window);
+void setupWindow(GLFWwindow*& window);
 void readFromObj(std::string path, std::vector<glm::vec3>& out_vertices, std::vector<glm::vec2>& out_textures, std::vector<glm::vec3>& out_normais);
 
 // Window size
@@ -51,6 +51,7 @@ float scaleLevel = 0.5f;
 
 // Number of vertices
 int verticesSize = 0;
+std::vector<GLfloat> vertices;
 
 // Translation parameters
 GLfloat translateX = 0.0f;
@@ -61,7 +62,7 @@ int main()
 {
 	GLFWwindow* window;
 
-	stupWindow(window);
+	setupWindow(window);
 
 	// Definindo as dimens�es da viewport com as mesmas dimens�es da janela da aplica��o
 	int width, height;
@@ -118,7 +119,7 @@ int main()
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
 
-		glDrawArrays(GL_TRIANGLES, 0, verticesSize/8);
+		glDrawArrays(GL_TRIANGLES, 0, vertices.size()/8);
 
 		glBindVertexArray(0);
 		glBindTexture(GL_TEXTURE_2D, 0); //unbind da textura
@@ -141,12 +142,12 @@ void setupTransformacoes(glm::mat4& model) {
 	model = glm::scale(model, glm::vec3(scaleLevel, scaleLevel, scaleLevel));
 }
 
-void stupWindow(GLFWwindow*& window) {
+void setupWindow(GLFWwindow*& window) {
 	glfwInit();
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Modulo 3", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
@@ -283,36 +284,10 @@ GLuint setupGeometry(string filePath)
 	std::vector<glm::vec3> vetVertices;
 	std::vector<glm::vec3> vetNormal;
 	std::vector<glm::vec2> vetTexturas;
-	std::vector<GLfloat> vertices;
+	
 
 	readFromObj(filePath, vetVertices, vetTexturas, vetNormal);
 
-
-	//mapeamento dos triângulos
-	for (unsigned int i = 0; i < vetVertices.size(); i++)
-	{
-		vertices.push_back(vetVertices[i].x);
-		vertices.push_back(vetVertices[i].y);
-		vertices.push_back(vetVertices[i].z);
-
-		vertices.push_back(0.5f);
-		vertices.push_back(0.5f);
-		vertices.push_back(0.5f);
-
-		vertices.push_back(vetTexturas[i].x);
-		vertices.push_back(vetTexturas[i].y);
-	}
-
-	/*for (int i = 0; i < vertices.size(); i++) {
-		std::cout << vertices[i] << ", ";
-
-		Break line after every 6 positions
-		//if ((i + 1) % 8 == 0)
-			//std::cout << std::endl;
-	}*/
-
-
-	verticesSize = vetVertices.size();
 
 	GLuint VAO, VBO;
 
@@ -324,6 +299,7 @@ GLuint setupGeometry(string filePath)
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STATIC_DRAW);
 
 	glBindVertexArray(VAO);
+
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
 	glEnableVertexAttribArray(0);
 
@@ -436,30 +412,32 @@ void readFromObj(string path,
 				for (int i = 0; i < 3; ++i)
 				{
 					iss >> vertexIndex[i] >> slash >> textIndex[i] >> slash >> normalIndex[i];
-					verticesIndices.push_back(vertexIndex[i]);
-					texturesIndices.push_back(textIndex[i]);
-					normalIndices.push_back(normalIndex[i]);
+
+					out_vertices.push_back(temp_vertices[vertexIndex[i] - 1]);
+					out_textures.push_back(temp_textures[textIndex[i] - 1]);
+					out_normais.push_back(temp_normais[normalIndex[i] - 1]);
 				}
 			}
 		}
 	}
 
+	file.close();
+
+
 	std::cout << temp_vertices.size() << std::endl;
 
-	for (unsigned int i = 0; i < verticesIndices.size(); ++i)
+	//mapeamento dos triângulos
+	for (unsigned int i = 0; i < out_vertices.size(); i++)
 	{
-		unsigned int vertexIndex = verticesIndices[i];
-		unsigned int textIndex = texturesIndices[i];
-		unsigned int normalIndex = normalIndices[i];
+		vertices.push_back(out_vertices[i].x);
+		vertices.push_back(out_vertices[i].y);
+		vertices.push_back(out_vertices[i].z);
 
-		glm::vec3 vertex = temp_vertices[vertexIndex - 1];
-		glm::vec2 texture = temp_textures[textIndex - 1];
-		glm::vec3 normal = temp_normais[normalIndex - 1];
+		vertices.push_back(out_normais[i].r);
+		vertices.push_back(out_normais[i].g);
+		vertices.push_back(out_normais[i].b);
 
-		out_vertices.push_back(vertex);
-		out_textures.push_back(texture);
-		out_normais.push_back(normal);
+		vertices.push_back(out_textures[i].x);
+		vertices.push_back(out_textures[i].y);
 	}
-
-	file.close();
 }
