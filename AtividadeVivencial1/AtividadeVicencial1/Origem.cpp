@@ -70,6 +70,7 @@ float scaleLevel = 0.5f;
 
 // Number of vertices
 int verticesSize = 0;
+std::vector<GLfloat> vertices;
 
 // Translation parameters
 GLfloat translateX = 0.0f;
@@ -331,43 +332,10 @@ GLuint setupGeometry(string filePath)
 	std::vector<glm::vec3> vetVertices;
 	std::vector<glm::vec3> vetNormal;
 	std::vector<glm::vec2> vetTexturas;
-	std::vector<GLfloat> vertices;
+	
 
 	readFromObj(filePath, vetVertices, vetTexturas, vetNormal);
 
-	//inicialização cores
-	std::array<GLfloat, 3> cor1 = { 1.000f, 0.647f, 0.694f };  // 255 165 177
-	std::array<GLfloat, 3> cor2 = { 0.741f, 0.129f, 0.415f };  // 189 33 106
-	std::array<GLfloat, 3> cor3 = { 0.949f, 0.780f, 0.790f };  // 242 199 203
-	std::array<GLfloat, 3> cor4 = { 0.972f, 0.407f, 0.584f };  // 248 104 149
-	std::array<GLfloat, 3> cor5 = { 1.000f, 0.058f, 0.502f };  // 255 15 128
-
-	std::vector<std::array<GLfloat, 3>> cores;
-	cores.push_back(cor1);
-	cores.push_back(cor2);
-	cores.push_back(cor3);
-	cores.push_back(cor4);
-	cores.push_back(cor5);
-
-	int cor = 0;
-
-	//mapeamento dos triângulos
-	for (unsigned int i = 0; i < vetVertices.size(); i++)
-	{
-		vertices.push_back(vetVertices[i].x);
-		vertices.push_back(vetVertices[i].y);
-		vertices.push_back(vetVertices[i].z);
-
-		vertices.push_back(cores[cor][0]);
-		vertices.push_back(cores[cor][1]);
-		vertices.push_back(cores[cor][2]);
-
-		cor++;
-
-		if (cor == 5) {
-			cor = 0;
-		}
-	}
 
 	verticesSize = vertices.size();
 
@@ -451,7 +419,7 @@ void readFromObj(string path,
 			else if (prefix == "vt")
 			{
 				glm::vec2 values;
-				iss >> values.x >> values.y;
+				iss >> values.s >> values.t;
 				temp_textures.push_back(values);
 			}
 			else if (prefix == "vn")
@@ -467,10 +435,12 @@ void readFromObj(string path,
 
 				for (int i = 0; i < 3; ++i)
 				{
+					//1 5 6
 					iss >> vertexIndex[i] >> slash >> textIndex[i] >> slash >> normalIndex[i];
-					verticesIndices.push_back(vertexIndex[i]);
-					texturesIndices.push_back(textIndex[i]);
-					normalIndices.push_back(normalIndex[i]);
+
+					out_vertices.push_back(temp_vertices[vertexIndex[i] - 1]);
+					out_textures.push_back(temp_textures[textIndex[i] - 1]);
+					out_normais.push_back(temp_normais[normalIndex[i] - 1]);
 				}
 			}
 		}
@@ -478,20 +448,40 @@ void readFromObj(string path,
 
 	std::cout << temp_vertices.size() << std::endl;
 
-	for (unsigned int i = 0; i < verticesIndices.size(); ++i)
-	{
-		unsigned int vertexIndex = verticesIndices[i];
-		unsigned int textIndex = texturesIndices[i];
-		unsigned int normalIndex = normalIndices[i];
-
-		glm::vec3 vertex = temp_vertices[vertexIndex - 1];
-		glm::vec2 texture = temp_textures[textIndex - 1];
-		glm::vec3 normal = temp_normais[normalIndex - 1];
-
-		out_vertices.push_back(vertex);
-		out_textures.push_back(texture);
-		out_normais.push_back(normal);
-	}
-
 	file.close();
+	
+
+	//inicialização cores
+	std::array<GLfloat, 3> cor1 = { 1.000f, 0.647f, 0.694f };  // 255 165 177
+	std::array<GLfloat, 3> cor2 = { 0.741f, 0.129f, 0.415f };  // 189 33 106
+	std::array<GLfloat, 3> cor3 = { 0.949f, 0.780f, 0.790f };  // 242 199 203
+	std::array<GLfloat, 3> cor4 = { 0.972f, 0.407f, 0.584f };  // 248 104 149
+	std::array<GLfloat, 3> cor5 = { 1.000f, 0.058f, 0.502f };  // 255 15 128
+
+	std::vector<std::array<GLfloat, 3>> cores;
+	cores.push_back(cor1);
+	cores.push_back(cor2);
+	cores.push_back(cor3);
+	cores.push_back(cor4);
+	cores.push_back(cor5);
+
+	int cor = 0;
+
+	//mapeamento dos triângulos
+	for (unsigned int i = 0; i < out_vertices.size(); i++)
+	{
+		vertices.push_back(out_vertices[i].x);
+		vertices.push_back(out_vertices[i].y);
+		vertices.push_back(out_vertices[i].z);
+
+		vertices.push_back(cores[cor][0]);
+		vertices.push_back(cores[cor][1]);
+		vertices.push_back(cores[cor][2]);
+
+		cor++;
+
+		if (cor == 5) {
+			cor = 0;
+		}
+	}
 }
