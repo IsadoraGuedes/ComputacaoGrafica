@@ -36,11 +36,14 @@ Autora: Isadora Soares Guedes
 
 - Adiciona leitura do arquivo mtl
 - Adiciona leitura com texturas
-
+- Adiciona uso dos valores "vt" do arquivo .obj
 
 ![imagem1](/Modulo3/imagens/modulo3-frente.png)
 
 ## Entrega do Módulo 4
+
+- Adiciona configuração de iluminação
+- Adiciona uso dos valores "vn" do arquivo .obj
 
 ![imagem1](/Modulo4/imagens/modulo4-cubo.png)
 ![imagem1](/Modulo4/imagens/modulo4-suzanne.png)
