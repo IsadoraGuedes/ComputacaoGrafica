@@ -1,11 +1,8 @@
-﻿/* Hello Triangle - código adaptado de https://learnopengl.com/#!Getting-started/Hello-Triangle
- *
- * Adaptado por Rossana Baptista Queiroz
- * para a disciplina de Processamento Gráfico - Jogos Digitais - Unisinos
- * Versão inicial: 7/4/2017
- * Última atualização em 11/04/2022
- *
- */
+﻿/* 
+* 	Isadora Guedes
+*	Computação Gráfica
+* 	Módulo 3
+*/
 
 #include <iostream>
 #include <string>

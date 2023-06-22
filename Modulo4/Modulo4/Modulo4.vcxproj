@@ -145,13 +145,11 @@
     <ClCompile Include="..\..\Common\src\glad.c" />
     <ClCompile Include="..\..\Common\src\Shader.cpp" />
     <ClCompile Include="..\..\Common\src\stb_image.cpp" />
-    <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Origem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Common\include\Shader.h" />
     <ClInclude Include="..\..\Common\include\stb_image.h" />
-    <ClInclude Include="Mesh.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\shaders\sprite.fs" />
