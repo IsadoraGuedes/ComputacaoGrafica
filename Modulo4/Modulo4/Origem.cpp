@@ -1,11 +1,8 @@
-﻿/* Hello Triangle - código adaptado de https://learnopengl.com/#!Getting-started/Hello-Triangle
- *
- * Adaptado por Rossana Baptista Queiroz
- * para a disciplina de Processamento Gráfico - Jogos Digitais - Unisinos
- * Versão inicial: 7/4/2017
- * Última atualização em 11/04/2022
- *
- */
+﻿/* 
+*	Isadora Soares Guedes
+*	Computação Gráfica
+*	Módulo 4
+*/
 
 #include <iostream>
 #include <string>
@@ -32,18 +29,26 @@ void setupWindow(GLFWwindow*& window);
 void resetAllRotate();
 void setupTransformacoes(glm::mat4& model);
 
+//geometry configuration
 void readFromObj(string path);
 void readFromMtl(string path);
 int setupGeometry();
 int loadTexture(string path);
 
-const GLuint WIDTH = 800, HEIGHT = 600;
+//obj values
 vector<GLfloat> totalvertices;
 vector<GLfloat> vertices;
 vector<GLfloat> textures;
 vector<GLfloat> normais;
+
+//file values
 string mtlFilePath = "";
 string textureFilePath = "";
+string basePath = "../../Arquivos/";
+string objFileName = "SuzanneTriTextured.obj";
+
+
+//iluminacao values
 vector<GLfloat> ka;
 vector<GLfloat> ks;
 float ns;
@@ -53,18 +58,11 @@ glm::vec3 cameraPos = glm::vec3(0.0, 0.0, 3.0);
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 
-// Rotation parameters
+// Transformation parameters
 bool rotateX = false;
 bool rotateY = false;
 bool rotateZ = false;
-
-// Scale parameter
 float scaleLevel = 200.0f;
-
-// Number of vertices
-int verticesSize = 0;
-
-// Translation parameters
 GLfloat translateX = 400.0f;
 GLfloat translateY = 300.0f;
 GLfloat translateZ = 100.0f;
@@ -76,9 +74,9 @@ int main()
 	setupWindow(window);
 
 	Shader shader("../shaders/sprite.vs", "../shaders/sprite.fs");
-	readFromObj("../../Arquivos/SuzanneTriTextured.obj");
-	readFromMtl("../../Arquivos/mtl/" + mtlFilePath);
-	GLuint textureID = loadTexture("../../Arquivos/textures/" + textureFilePath);
+	readFromObj(basePath + objFileName);
+	readFromMtl(basePath + "/mtl/" + mtlFilePath);
+	GLuint textureID = loadTexture(basePath + "/textures/" + textureFilePath);
 	GLuint VAO = setupGeometry();
 
 	glUseProgram(shader.ID);
@@ -145,41 +143,51 @@ int main()
 
 void readFromMtl(string path)
 {
-	string line, readValue;
-	ifstream mtlFile(path);
+	std::ifstream file(path);
 
-	while (!mtlFile.eof())
-	{
-		getline(mtlFile, line);
+	if (!file.is_open()) {
+		std::cout << "Failed to open the file." << std::endl;
+	}
 
-		istringstream iss(line);
+	std::string line;
 
-		if (line.find("map_Kd") == 0)
-		{
-			iss >> readValue >> textureFilePath;
-		}
-		else if (line.find("Ka") == 0)
-		{
-			float ka1, ka2, ka3;
-			iss >> readValue >> ka1 >> ka2 >> ka3;
-			ka.push_back(ka1);
-			ka.push_back(ka2);
-			ka.push_back(ka3);
-		}
-		else if (line.find("Ks") == 0)
-		{
-			float ks1, ks2, ks3;
-			iss >> readValue >> ks1 >> ks2 >> ks3;
-			ks.push_back(ks1);
-			ks.push_back(ks2);
-			ks.push_back(ks3);
-		}
-		else if (line.find("Ns") == 0)
-		{
-			iss >> readValue >> ns;
+	while (std::getline(file, line)) {
+		if (line.length() > 0) {
+
+			std::istringstream iss(line);
+			std::string prefix;
+			iss >> prefix;
+
+			if (prefix == "map_Kd")
+			{
+				iss >> textureFilePath;
+			}
+			else if (prefix == "Ka")
+			{
+				glm::vec3 temp_ka;
+				iss >> temp_ka.x >> temp_ka.y >> temp_ka.z;
+
+				ka.push_back(temp_ka.x);
+				ka.push_back(temp_ka.y);
+				ka.push_back(temp_ka.z);
+			}
+			else if (prefix == "Ks")
+			{
+				glm::vec3 temp_ks;
+				iss >> temp_ks.x >> temp_ks.y >> temp_ks.z;
+
+				ks.push_back(temp_ks.x);
+				ks.push_back(temp_ks.x);
+				ks.push_back(temp_ks.x);
+			}
+			else if (prefix == "Ns")
+			{
+				iss >> ns;
+			}
 		}
 	}
-	mtlFile.close();
+
+	file.close();
 }
 
 int setupGeometry()
@@ -352,7 +360,7 @@ void setupWindow(GLFWwindow*& window) {
 }
 
 void setupTransformacoes(glm::mat4& model) {
-	float angle = (GLfloat)glfwGetTime();
+	float angle = (GLfloat)glfwGetTime() / 10 * 7;
 
 	model = glm::mat4(1);
 
@@ -375,8 +383,8 @@ void setupTransformacoes(glm::mat4& model) {
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	const float scaleStep = 0.1f;
-	const float translateStep = 0.01f;
+	const float scaleStep = 10.f;
+	const float translateStep = 10.01f;
 
 	//Escala ---------------
 	if (key == GLFW_KEY_T && action == GLFW_PRESS)
@@ -444,10 +452,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if ((key == GLFW_KEY_P) && action == GLFW_PRESS)
 	{
 		resetAllRotate();
-		translateX = 0.0f;
-		translateY = 0.0f;
-		translateZ = 0.0f;
-		scaleLevel = 0.5f;
+		translateX = 400.0f;
+		translateY = 300.0f;
+		translateZ = 100.0f;
+		scaleLevel = 200.5f;
 	}
 }
 
