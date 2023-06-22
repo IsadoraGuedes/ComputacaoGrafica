@@ -39,6 +39,9 @@
     <ClCompile Include="..\..\Common\src\stb_image.cpp">
       <Filter>Common code\src</Filter>
     </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Arquivos de Origem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Common\include\Shader.h">
@@ -47,12 +50,15 @@
     <ClInclude Include="..\..\Common\include\stb_image.h">
       <Filter>Common code\headers</Filter>
     </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\shaders\sprite.fs">
+    <None Include="..\shaders\sprite.vs">
       <Filter>shaders</Filter>
     </None>
-    <None Include="..\shaders\sprite.vs">
+    <None Include="..\shaders\sprite.fs">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
