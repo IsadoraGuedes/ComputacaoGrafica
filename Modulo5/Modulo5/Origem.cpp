@@ -1,7 +1,7 @@
 ﻿/* 
 *	Isadora Soares Guedes
 *	Computação Gráfica
-*	Módulo 5
+*	Módulo 4
 */
 
 #include <iostream>
@@ -23,8 +23,12 @@ using namespace std;
 #include "stb_image.h"
 #include "Shader.h"
 
+#include "Mesh.h"
+#include "Camera.h"
+
 //window configuration
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void setupWindow(GLFWwindow*& window);
 void resetAllRotate();
 void setupTransformacoes(glm::mat4& model);
@@ -52,7 +56,16 @@ string objFileName = "SuzanneTriTextured.obj";
 vector<GLfloat> ka;
 vector<GLfloat> ks;
 float ns;
+
+//camera
 glm::vec3 cameraPos = glm::vec3(0.0, 0.0, 3.0);
+glm::vec3 cameraFront = glm::vec3(0.0, 0.0, -1.0);
+glm::vec3 cameraUp = glm::vec3(0.0, 1.0, 0.0);
+
+bool firstMouse = true;
+float lastX, lastY;
+float sensitivity = 0.05f;
+float pitch = 0.0, yaw = -90.0;
 
 // Window size
 const int WINDOW_WIDTH = 800;
@@ -62,16 +75,19 @@ const int WINDOW_HEIGHT = 600;
 bool rotateX = false;
 bool rotateY = false;
 bool rotateZ = false;
-float scaleLevel = 200.0f;
-GLfloat translateX = 400.0f;
-GLfloat translateY = 300.0f;
-GLfloat translateZ = 100.0f;
+
+Camera camera;
 
 int main()
 {
 	GLFWwindow* window;
 
 	setupWindow(window);
+
+	int width, height;
+	glfwGetFramebufferSize(window, &width, &height);
+	glViewport(0, 0, width, height);
+
 
 	Shader shader("../shaders/sprite.vs", "../shaders/sprite.fs");
 	readFromObj(basePath + objFileName);
@@ -82,23 +98,27 @@ int main()
 	glUseProgram(shader.ID);
 	glUniform1i(glGetUniformLocation(shader.ID, "tex_buffer"), 0);
 
-	glm::mat4 projection = glm::mat4(1);
-	projection = glm::ortho(0.0, 800.0, 0.0, 600.0, -1000.0, 1000.0);
-
-	GLint projLoc = glGetUniformLocation(shader.ID, "projection");
-	glUniformMatrix4fv(projLoc, 1, false, glm::value_ptr(projection));
-
+	//Matriz de view -- posi��o e orienta��o da c�mera
 	glm::mat4 view = glm::lookAt(glm::vec3(0.0, 0.0, 3.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-	GLint viewLoc = glGetUniformLocation(shader.ID, "view");
-	glUniformMatrix4fv(viewLoc, 1, FALSE, glm::value_ptr(view));
+	shader.setMat4("view", value_ptr(view));
+
+	//Matriz de proje��o perspectiva - definindo o volume de visualiza��o (frustum)
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+	shader.setMat4("projection", glm::value_ptr(projection));
+
+	Mesh object;
+	object.initialize(VAO, (totalvertices.size() / 8), &shader, glm::vec3(-2.75, 0.0, 0.0));
 
 	shader.setVec3("ka", ka[0], ka[1], ka[2]);
-	shader.setFloat("kd", 0.5);
+	shader.setFloat("kd", 0.7);
 	shader.setVec3("ks", ks[0], ks[1], ks[2]);
 	shader.setFloat("q", ns);
 
 	shader.setVec3("lightPos", -2.0f, 100.0f, 2.0f);
 	shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+
+	glEnable(GL_DEPTH_TEST);
+
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -108,28 +128,26 @@ int main()
 		glfwGetFramebufferSize(window, &width, &height);
 		glViewport(0, 0, width, height);
 
-		glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glLineWidth(10);
 		glPointSize(20);
 
-		glm::mat4 model = glm::mat4(1);
-		setupTransformacoes(model);
-		GLint modelLoc = glGetUniformLocation(shader.ID, "model");
-		glUniformMatrix4fv(modelLoc, 1, false, glm::value_ptr(model));
+		//Atualizando a posi��o e orienta��o da c�mera
+		glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		shader.setMat4("view", glm::value_ptr(view));
 
-		glUniformMatrix4fv(viewLoc, 1, FALSE, glm::value_ptr(view));
+		//Atualizando o shader com a posi��o da c�mera
 		shader.setVec3("cameraPos", cameraPos.x, cameraPos.y, cameraPos.z);
+
+		//camera.initialize(&shader);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textureID);
 
-		glBindVertexArray(VAO);
-
-		glDrawArrays(GL_TRIANGLES, 0, (vertices.size() / 3));
-
-		glBindVertexArray(0);
+		object.draw();
+		object.update();
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -192,32 +210,31 @@ void readFromMtl(string path)
 
 int setupGeometry()
 {
-	GLuint VAO, VBO[3];
+	GLuint VBO, VAO;
+
+	glGenBuffers(1, &VBO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+	glBufferData(GL_ARRAY_BUFFER, totalvertices.size() * sizeof(GLfloat), totalvertices.data(), GL_STATIC_DRAW);
 
 	glGenVertexArrays(1, &VAO);
-	glGenBuffers(2, VBO);
 
 	glBindVertexArray(VAO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	// coordenadas posição - x, y, z
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
 	glEnableVertexAttribArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
-	glBufferData(GL_ARRAY_BUFFER, textures.size() * sizeof(GLfloat), textures.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	// coordenadas de textura - s, t (ou u, v)
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
-	glBufferData(GL_ARRAY_BUFFER, normais.size() * sizeof(GLfloat), normais.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	// coordenadas normal - x, y, z
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(2);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 
-	glEnable(GL_DEPTH_TEST);
+	glBindVertexArray(0);
 
 	return VAO;
 }
@@ -274,16 +291,16 @@ void readFromObj(string path) {
 					glm::vec3 normaiss = temp_normais[normalIndex - 1];
 					glm::vec2 texturess = temp_textures[textIndex - 1];
 
-					vertices.push_back(verticess.x);
-					vertices.push_back(verticess.y);
-					vertices.push_back(verticess.z);
+					totalvertices.push_back(verticess.x);
+					totalvertices.push_back(verticess.y);
+					totalvertices.push_back(verticess.z);
 
-					textures.push_back(texturess.x);
-					textures.push_back(texturess.y);
+					totalvertices.push_back(texturess.x);
+					totalvertices.push_back(texturess.y);
 
-					normais.push_back(normaiss.x);
-					normais.push_back(normaiss.y);
-					normais.push_back(normaiss.z);
+					totalvertices.push_back(normaiss.x);
+					totalvertices.push_back(normaiss.y);
+					totalvertices.push_back(normaiss.z);
 				}
 			}
 			else if (prefix == "mtllib")
@@ -294,9 +311,6 @@ void readFromObj(string path) {
 	}
 
 	file.close();
-
-
-	std::cout << temp_textures.size() << std::endl;
 }
 
 int loadTexture(string path)
@@ -342,10 +356,16 @@ int loadTexture(string path)
 void setupWindow(GLFWwindow*& window) {
 	glfwInit();
 
-	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Modulo 5: Cameras - Isadora Guedes", nullptr, nullptr);
+	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Modulo 4: Iluminacao - Isadora Guedes", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 
 	glfwSetKeyCallback(window, key_callback);
+	glfwSetCursorPosCallback(window, mouse_callback);
+
+	glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+
+	//Desabilita o desenho do cursor 
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
@@ -359,108 +379,82 @@ void setupWindow(GLFWwindow*& window) {
 	cout << "OpenGL version supported " << version << endl;
 }
 
-void setupTransformacoes(glm::mat4& model) {
-	float angle = (GLfloat)glfwGetTime() / 10 * 7;
-
-	model = glm::mat4(1);
-
-	model = glm::translate(model, glm::vec3(translateX, translateY, translateZ));
-	if (rotateX)
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	//cout << xpos << " " << ypos << endl;
+	if (firstMouse)
 	{
-		model = glm::rotate(model, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-	}
-	else if (rotateY)
-	{
-		model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-	}
-	else if (rotateZ)
-	{
-		model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+		lastX = xpos;
+		lastY = ypos;
+		firstMouse = false;
 	}
 
-	model = glm::scale(model, glm::vec3(scaleLevel, scaleLevel, scaleLevel));
+	float offsetx = xpos - lastX;
+	float offsety = lastY - ypos;
+
+	lastX = xpos;
+	lastY = ypos;
+
+	offsetx *= sensitivity;
+	offsety *= sensitivity;
+
+	pitch += offsety;
+	yaw += offsetx;
+
+	glm::vec3 front;
+	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+	front.y = sin(glm::radians(pitch));
+	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+	
+	cameraFront = glm::normalize(front);
+	//camera.update(front);
 }
+
+
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	const float scaleStep = 10.f;
-	const float translateStep = 10.01f;
-
-	//Escala ---------------
-	if (key == GLFW_KEY_T && action == GLFW_PRESS)
-	{
-		// Aumenta scale
-		scaleLevel += scaleStep;
-	}
-	else if (key == GLFW_KEY_R && action == GLFW_PRESS)
-	{
-		// Diminui scale
-		scaleLevel -= scaleStep;
-	}
-
-	//Rotação----------------------
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
-	if ((key == GLFW_KEY_X) && action == GLFW_PRESS)
+	if (key == GLFW_KEY_X && action == GLFW_PRESS)
 	{
-		resetAllRotate();
 		rotateX = true;
+		rotateY = false;
+		rotateZ = false;
 	}
 
-	if ((key == GLFW_KEY_Y) && action == GLFW_PRESS)
+	if (key == GLFW_KEY_Y && action == GLFW_PRESS)
 	{
-		resetAllRotate();
+		rotateX = false;
 		rotateY = true;
+		rotateZ = false;
 	}
 
-	if ((key == GLFW_KEY_Z) && action == GLFW_PRESS)
+	if (key == GLFW_KEY_Z && action == GLFW_PRESS)
 	{
-		resetAllRotate();
+		rotateX = false;
+		rotateY = false;
 		rotateZ = true;
 	}
 
-	// Translação -----------------
-	if (action == GLFW_PRESS || action == GLFW_REPEAT)
+	float cameraSpeed = 0.05;
+
+	if (key == GLFW_KEY_W)
 	{
-		switch (key)
-		{
-		case GLFW_KEY_A:
-			translateX -= translateStep;
-			break;
-		case GLFW_KEY_D:
-			translateX += translateStep;
-			break;
-		case GLFW_KEY_W:
-			translateY += translateStep;
-			break;
-		case GLFW_KEY_S:
-			translateY -= translateStep;
-			break;
-		case GLFW_KEY_I:
-			translateZ += translateStep;
-			break;
-		case GLFW_KEY_J:
-			translateZ -= translateStep;
-			break;
-		default:
-			break;
-		}
+		cameraPos += cameraFront * cameraSpeed;
+	}
+	if (key == GLFW_KEY_S)
+	{
+		cameraPos -= cameraFront * cameraSpeed;
+	}
+	if (key == GLFW_KEY_A)
+	{
+		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+	}
+	if (key == GLFW_KEY_D)
+	{
+		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 	}
 
-	// Resetar visualização
-	if ((key == GLFW_KEY_P) && action == GLFW_PRESS)
-	{
-		resetAllRotate();
-		translateX = 400.0f;
-		translateY = 300.0f;
-		translateZ = 100.0f;
-		scaleLevel = 200.5f;
-	}
-}
-
-void resetAllRotate() {
-	rotateX = false;
-	rotateY = false;
-	rotateZ = false;
 }

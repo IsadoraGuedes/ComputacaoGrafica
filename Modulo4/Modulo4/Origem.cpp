@@ -23,6 +23,8 @@ using namespace std;
 #include "stb_image.h"
 #include "Shader.h"
 
+#include "Mesh.h"
+
 //window configuration
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void setupWindow(GLFWwindow*& window);
@@ -91,6 +93,9 @@ int main()
 	GLint viewLoc = glGetUniformLocation(shader.ID, "view");
 	glUniformMatrix4fv(viewLoc, 1, FALSE, glm::value_ptr(view));
 
+	Mesh object;
+	object.initialize(VAO, (totalvertices.size() / 8), &shader, glm::vec3(-2.75, 0.0, 0.0));
+
 	shader.setVec3("ka", ka[0], ka[1], ka[2]);
 	shader.setFloat("kd", 0.7);
 	shader.setVec3("ks", ks[0], ks[1], ks[2]);
@@ -125,11 +130,7 @@ int main()
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textureID);
 
-		glBindVertexArray(VAO);
-
-		glDrawArrays(GL_TRIANGLES, 0, (totalvertices.size() / 8));
-
-		glBindVertexArray(0);
+		object.draw();
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 
