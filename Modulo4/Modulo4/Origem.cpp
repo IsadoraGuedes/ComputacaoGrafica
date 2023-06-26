@@ -52,7 +52,6 @@ string objFileName = "SuzanneTriTextured.obj";
 vector<GLfloat> ka;
 vector<GLfloat> ks;
 float ns;
-glm::vec3 cameraPos = glm::vec3(0.0, 0.0, 3.0);
 
 // Window size
 const int WINDOW_WIDTH = 800;
@@ -93,12 +92,14 @@ int main()
 	glUniformMatrix4fv(viewLoc, 1, FALSE, glm::value_ptr(view));
 
 	shader.setVec3("ka", ka[0], ka[1], ka[2]);
-	shader.setFloat("kd", 0.5);
+	shader.setFloat("kd", 0.7);
 	shader.setVec3("ks", ks[0], ks[1], ks[2]);
 	shader.setFloat("q", ns);
 
 	shader.setVec3("lightPos", -2.0f, 100.0f, 2.0f);
 	shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+
+	glEnable(GL_DEPTH_TEST);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -120,14 +121,13 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, false, glm::value_ptr(model));
 
 		glUniformMatrix4fv(viewLoc, 1, FALSE, glm::value_ptr(view));
-		shader.setVec3("cameraPos", cameraPos.x, cameraPos.y, cameraPos.z);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textureID);
 
 		glBindVertexArray(VAO);
 
-		glDrawArrays(GL_TRIANGLES, 0, (vertices.size() / 3));
+		glDrawArrays(GL_TRIANGLES, 0, (totalvertices.size() / 8));
 
 		glBindVertexArray(0);
 
@@ -192,32 +192,31 @@ void readFromMtl(string path)
 
 int setupGeometry()
 {
-	GLuint VAO, VBO[3];
+	GLuint VBO, VAO;
+
+	glGenBuffers(1, &VBO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+	glBufferData(GL_ARRAY_BUFFER, totalvertices.size() * sizeof(GLfloat), totalvertices.data(), GL_STATIC_DRAW);
 
 	glGenVertexArrays(1, &VAO);
-	glGenBuffers(2, VBO);
 
 	glBindVertexArray(VAO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	// coordenadas posição - x, y, z
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
 	glEnableVertexAttribArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
-	glBufferData(GL_ARRAY_BUFFER, textures.size() * sizeof(GLfloat), textures.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	// coordenadas de textura - s, t (ou u, v)
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
-	glBufferData(GL_ARRAY_BUFFER, normais.size() * sizeof(GLfloat), normais.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	// coordenadas normal - x, y, z
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(2);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 
-	glEnable(GL_DEPTH_TEST);
+	glBindVertexArray(0);
 
 	return VAO;
 }
@@ -274,16 +273,16 @@ void readFromObj(string path) {
 					glm::vec3 normaiss = temp_normais[normalIndex - 1];
 					glm::vec2 texturess = temp_textures[textIndex - 1];
 
-					vertices.push_back(verticess.x);
-					vertices.push_back(verticess.y);
-					vertices.push_back(verticess.z);
+					totalvertices.push_back(verticess.x);
+					totalvertices.push_back(verticess.y);
+					totalvertices.push_back(verticess.z);
 
-					textures.push_back(texturess.x);
-					textures.push_back(texturess.y);
+					totalvertices.push_back(texturess.x);
+					totalvertices.push_back(texturess.y);
 
-					normais.push_back(normaiss.x);
-					normais.push_back(normaiss.y);
-					normais.push_back(normaiss.z);
+					totalvertices.push_back(normaiss.x);
+					totalvertices.push_back(normaiss.y);
+					totalvertices.push_back(normaiss.z);
 				}
 			}
 			else if (prefix == "mtllib")
@@ -294,9 +293,6 @@ void readFromObj(string path) {
 	}
 
 	file.close();
-
-
-	std::cout << temp_textures.size() << std::endl;
 }
 
 int loadTexture(string path)
