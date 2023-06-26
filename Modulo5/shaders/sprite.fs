@@ -1,4 +1,7 @@
-in vec3 finalColor;
+//C?digo fonte do Fragment Shader (em GLSL)
+#version 450
+
+//Informa??es recebidas do vertex shader
 in vec3 scaledNormal;
 in vec3 fragPos;
 in vec2 texCoord;
@@ -13,14 +16,14 @@ uniform float q;
 uniform vec3 lightPos;
 uniform vec3 lightColor;
 
-//Posição da câmera 
+//Posi??o da c?mera 
 uniform vec3 cameraPos;
 
-//Buffer de saída (color buffer)
+//Buffer de sa?da (color buffer)
 out vec4 color;
 
 //buffer de textura
-uniform sampler2D tex_buffer;
+uniform sampler2D colorBuffer;
 
 void main()
 {
@@ -38,7 +41,7 @@ void main()
     float spec = pow(max(dot(R,V),0.0),q);
     vec3 specular = spec * ks * lightColor;
     
-    vec4 texColor = texture(tex_buffer,texCoord);
+    vec4 texColor = texture(colorBuffer,texCoord);
     vec3 result = (ambient + diffuse) * vec3(texColor) + specular;
 
     color = vec4(result, 1.0f);
