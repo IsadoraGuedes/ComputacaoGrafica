@@ -13,12 +13,19 @@ class Camera
 public:
 	Camera() {}
 	~Camera() {}
-	void initialize(Shader* shader, 
-        glm::vec3 cameraPos = glm::vec3(0.0, 0.0, 3.0),
+	void initialize(
+		glm::vec3 cameraPos = glm::vec3(0.0, 0.0, 3.0),
         glm::vec3 cameraFront = glm::vec3(0.0, 0.0, -1.0),
-        glm::vec3 cameraUp = glm::vec3(0.0, 1.0, 0.0));
-	void update(glm::vec3 front);
-    void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mode)
+        glm::vec3 cameraUp = glm::vec3(0.0, 1.0, 0.0),
+		bool firstMouse = true,
+		float lastX = 0, 
+		float lastY = 0,
+		float sensitivity = 0.05f,
+		float pitch = 0.0, 
+		float yaw = -90.0);
+	void update(Shader* shader);
+	void mouseCallback(GLFWwindow* window, double xpos, double ypos);
+	void setCameraPos(int key, float cameraSpeed = 0.5f);
 
 protected:
 	glm::vec3 cameraPos;
@@ -26,6 +33,12 @@ protected:
 	glm::vec3 cameraUp;
 	glm::vec3 front;
 
-	//Refer�ncia (endere�o) do shader
+	bool firstMouse;
+	float lastX;
+	float lastY;
+	float sensitivity;
+	float pitch;
+	float yaw;
+
 	Shader* shader;
 };

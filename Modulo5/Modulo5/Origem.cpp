@@ -32,6 +32,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void setupWindow(GLFWwindow*& window);
 void resetAllRotate();
 void setupTransformacoes(glm::mat4& model);
+void setupShader(Shader shader);
 
 //geometry configuration
 void readFromObj(string path);
@@ -56,11 +57,6 @@ string objFileName = "SuzanneTriTextured.obj";
 vector<GLfloat> ka;
 vector<GLfloat> ks;
 float ns;
-
-//camera
-glm::vec3 cameraPos = glm::vec3(0.0, 0.0, 3.0);
-glm::vec3 cameraFront = glm::vec3(0.0, 0.0, -1.0);
-glm::vec3 cameraUp = glm::vec3(0.0, 1.0, 0.0);
 
 bool firstMouse = true;
 float lastX, lastY;
@@ -109,24 +105,15 @@ int main()
 	Mesh object;
 	object.initialize(VAO, (totalvertices.size() / 8), &shader, glm::vec3(-2.75, 0.0, 0.0));
 
-	shader.setVec3("ka", ka[0], ka[1], ka[2]);
-	shader.setFloat("kd", 0.7);
-	shader.setVec3("ks", ks[0], ks[1], ks[2]);
-	shader.setFloat("q", ns);
-
-	shader.setVec3("lightPos", -2.0f, 100.0f, 2.0f);
-	shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+	setupShader(shader);
 
 	glEnable(GL_DEPTH_TEST);
 
+	camera.initialize();
 
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
-
-		int width, height;
-		glfwGetFramebufferSize(window, &width, &height);
-		glViewport(0, 0, width, height);
 
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -134,14 +121,7 @@ int main()
 		glLineWidth(10);
 		glPointSize(20);
 
-		//Atualizando a posi��o e orienta��o da c�mera
-		glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-		shader.setMat4("view", glm::value_ptr(view));
-
-		//Atualizando o shader com a posi��o da c�mera
-		shader.setVec3("cameraPos", cameraPos.x, cameraPos.y, cameraPos.z);
-
-		//camera.initialize(&shader);
+		camera.update(&shader);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textureID);
@@ -157,6 +137,16 @@ int main()
 	glDeleteVertexArrays(1, &VAO);
 	glfwTerminate();
 	return 0;
+}
+
+void setupShader(Shader shader) {
+	shader.setVec3("ka", ka[0], ka[1], ka[2]);
+	shader.setFloat("kd", 0.7f);
+	shader.setVec3("ks", ks[0], ks[1], ks[2]);
+	shader.setFloat("q", ns);
+
+	shader.setVec3("lightPos", -2.0f, 100.0f, 2.0f);
+	shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 }
 
 void readFromMtl(string path)
@@ -352,7 +342,6 @@ int loadTexture(string path)
 	return texID;
 }
 
-
 void setupWindow(GLFWwindow*& window) {
 	glfwInit();
 
@@ -381,80 +370,13 @@ void setupWindow(GLFWwindow*& window) {
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	//cout << xpos << " " << ypos << endl;
-	if (firstMouse)
-	{
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = false;
-	}
-
-	float offsetx = xpos - lastX;
-	float offsety = lastY - ypos;
-
-	lastX = xpos;
-	lastY = ypos;
-
-	offsetx *= sensitivity;
-	offsety *= sensitivity;
-
-	pitch += offsety;
-	yaw += offsetx;
-
-	glm::vec3 front;
-	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	front.y = sin(glm::radians(pitch));
-	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	
-	cameraFront = glm::normalize(front);
-	//camera.update(front);
+	camera.mouseCallback(window, xpos, ypos);
 }
-
-
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
-	if (key == GLFW_KEY_X && action == GLFW_PRESS)
-	{
-		rotateX = true;
-		rotateY = false;
-		rotateZ = false;
-	}
-
-	if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-	{
-		rotateX = false;
-		rotateY = true;
-		rotateZ = false;
-	}
-
-	if (key == GLFW_KEY_Z && action == GLFW_PRESS)
-	{
-		rotateX = false;
-		rotateY = false;
-		rotateZ = true;
-	}
-
-	float cameraSpeed = 0.05;
-
-	if (key == GLFW_KEY_W)
-	{
-		cameraPos += cameraFront * cameraSpeed;
-	}
-	if (key == GLFW_KEY_S)
-	{
-		cameraPos -= cameraFront * cameraSpeed;
-	}
-	if (key == GLFW_KEY_A)
-	{
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-	}
-	if (key == GLFW_KEY_D)
-	{
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-	}
-
+	camera.setCameraPos(key);
 }
