@@ -72,6 +72,11 @@ bool rotateX = false;
 bool rotateY = false;
 bool rotateZ = false;
 
+GLfloat translateX = 0.0f;
+GLfloat translateY = 0.0f;
+GLfloat translateZ = 0.0f;
+float scale = 1.0f;
+
 Camera camera;
 
 int main()
@@ -84,7 +89,6 @@ int main()
 	glfwGetFramebufferSize(window, &width, &height);
 	glViewport(0, 0, width, height);
 
-
 	Shader shader("../shaders/sprite.vs", "../shaders/sprite.fs");
 	readFromObj(basePath + objFileName);
 	readFromMtl(basePath + "/mtl/" + mtlFilePath);
@@ -94,22 +98,14 @@ int main()
 	glUseProgram(shader.ID);
 	glUniform1i(glGetUniformLocation(shader.ID, "tex_buffer"), 0);
 
-	//Matriz de view -- posi��o e orienta��o da c�mera
-	glm::mat4 view = glm::lookAt(glm::vec3(0.0, 0.0, 3.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-	shader.setMat4("view", value_ptr(view));
-
-	//Matriz de proje��o perspectiva - definindo o volume de visualiza��o (frustum)
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
-	shader.setMat4("projection", glm::value_ptr(projection));
-
 	Mesh object;
-	object.initialize(VAO, (totalvertices.size() / 8), &shader, glm::vec3(-2.75, 0.0, 0.0));
+	object.initialize(VAO, (totalvertices.size() / 8), &shader);
 
 	setupShader(shader);
 
 	glEnable(GL_DEPTH_TEST);
 
-	camera.initialize();
+	camera.initialize(&shader, width, height);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -121,13 +117,14 @@ int main()
 		glLineWidth(10);
 		glPointSize(20);
 
-		camera.update(&shader);
+		glm::mat4 model = glm::mat4(1);
+		setupTransformacoes(model);
+		GLint modelLoc = glGetUniformLocation(shader.ID, "model");
+		glUniformMatrix4fv(modelLoc, 1, 0, glm::value_ptr(model));
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textureID);
+		camera.update();
 
-		object.draw();
-		object.update();
+		object.draw(textureID);
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -378,5 +375,50 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
+	if (key == GLFW_KEY_X && action == GLFW_PRESS)
+	{
+		rotateX = true;
+		rotateY = false;
+		rotateZ = false;
+	}
+
+	if (key == GLFW_KEY_Y && action == GLFW_PRESS)
+	{
+		rotateX = false;
+		rotateY = true;
+		rotateZ = false;
+	}
+
+	if (key == GLFW_KEY_Z && action == GLFW_PRESS)
+	{
+		rotateX = false;
+		rotateY = false;
+		rotateZ = true;
+
+	}
 	camera.setCameraPos(key);
+}
+
+void setupTransformacoes(glm::mat4& model)
+{
+	float angle = (GLfloat)glfwGetTime();
+
+	if (rotateX)
+	{
+		model = glm::rotate(model, angle, glm::vec3(1.0f, 0.0f, 0.0f));
+	}
+	else if (rotateY)
+	{
+		model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+	}
+	else if (rotateZ)
+	{
+		model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+	}
+
+	// Translação
+	model = glm::translate(model, glm::vec3(translateX, translateY, translateZ));
+
+	// Escala
+	model = glm::scale(model, glm::vec3(scale, scale, scale));
 }
