@@ -18,5 +18,5 @@ void main()
 
 	fragPos = vec3(model * vec4(position, 1.0));
 	texCoord = vec2(texc.x, 1-texc.y);
-	scaledNormal = normal;
+	scaledNormal = mat3(transpose(inverse(model))) * normal;
 }

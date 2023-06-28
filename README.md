@@ -54,6 +54,4 @@ Autora: Isadora Soares Guedes
 - Adiciona movimentação da câmera através dos comandos wasd
 - Cria Camera.cpp e Camera.h para separar o código
 
-![imagem1](/Modulo5/imagens/modulo5-1.png)
-![imagem1](/Modulo5/imagens/modulo5-2.png)
-![imagem1](/Modulo5/imagens/modulo5-3.png)
+![imagem1](/Modulo5/imagens/modulo5.gif)
