@@ -11,17 +11,10 @@ void Mesh::initialize(GLuint VAO, int nVertices, Shader* shader, glm::vec3 posit
 	this->axis = axis;
 }
 
-void Mesh::update()
+void Mesh::draw(GLuint texId)
 {
-	glm::mat4 model = glm::mat4(1);
-	model = glm::translate(model, position);
-	model = glm::rotate(model, glm::radians(angle), axis);
-	model = glm::scale(model, scale);
-	shader->setMat4("model", glm::value_ptr(model));
-}
-
-void Mesh::draw()
-{
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texId);
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, nVertices);
 	glBindVertexArray(0);
