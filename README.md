@@ -55,3 +55,10 @@ Autora: Isadora Soares Guedes
 - Cria Camera.cpp e Camera.h para separar o código
 
 ![imagem1](/Modulo5/imagens/modulo5.gif)
+
+## Entrega do Módulo 6
+
+- Adiciona trajetória do objeto através do método Bezier
+- Trajetória circular pelos pontos definidos dentro do código
+
+![imagem1](/Modulo6/imagens/modulo6.gif)
