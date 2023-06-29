@@ -1,0 +1,3 @@
+name suzanne
+obj SuzanneTriTextured.obj
+texture ../textures/suzanne.png

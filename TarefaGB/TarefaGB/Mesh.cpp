@@ -46,3 +46,49 @@ void Mesh::setupTransformacoes(glm::mat4& model, glm::vec3 pointOnCurve, bool ro
 	model = glm::translate(model, pointOnCurve);
 	model = glm::scale(model, glm::vec3(scale, scale, scale));
 }
+
+void Mesh::setTexId(GLuint texId) {
+	this->texId = texId;
+}
+
+string Mesh::getTexturePath() {
+	return textFilePath;
+}
+
+string Mesh::getObjPath() {
+	return objFilePath;
+}
+
+GLuint Mesh::getTexId() {
+	return texId;
+}
+
+string Mesh::getMtlPath() {
+	return mtlFilePath;
+}
+
+void Mesh::setPaths(string textFilePath, string objFilePath, string mtlFilePath) {
+	this->textFilePath = textFilePath;
+	this->objFilePath = objFilePath;
+	this->mtlFilePath = mtlFilePath;
+}
+
+void Mesh::setObjFilePath(string path) {
+	this->objFilePath = path;
+}
+
+void Mesh::setMtlFilePath(string path) {
+	this->mtlFilePath = path;
+}
+
+void Mesh::setTextureFilePath(string path) {
+	this->textFilePath = path;
+}
+
+void Mesh::setDataVertices(vector<GLfloat> vertices) {
+	this->dataVertices = vertices;
+}
+
+vector<GLfloat> Mesh::getDataVertices() {
+	return dataVertices;
+}

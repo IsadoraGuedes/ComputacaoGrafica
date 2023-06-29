@@ -1,4 +1,4 @@
-﻿/* 
+﻿/*
 *	Isadora Soares Guedes
 *	Computação Gráfica
 *	Módulo 4
@@ -37,10 +37,11 @@ void setupWindow(GLFWwindow*& window);
 void setupShader(Shader shader);
 
 //geometry configuration
-void readFromObj(string path);
-void readFromMtl(string path);
-int setupGeometry();
-int loadTexture(string path);
+void readFromObj(Mesh& object);
+void readFromMtl(Mesh& object);
+int setupGeometry(std::vector<GLfloat> vertices);
+void loadTexture(Mesh& object);
+Mesh loadObjectConfig(string path);
 
 // Parametric curves
 std::vector<glm::vec3> generateTranslatePoints(string path);
@@ -52,8 +53,6 @@ vector<GLfloat> textures;
 vector<GLfloat> normais;
 
 //file values
-string mtlFilePath = "";
-string textureFilePath = "";
 string basePath = "../../Arquivos/";
 string objFileName = "CuboTextured.obj";
 
@@ -83,8 +82,11 @@ float scale = 0.5f;
 
 Camera camera;
 
-int main()
-{
+std::vector<std::string> objectsConfig;
+std::vector<Mesh> objects;
+std::vector<GLuint> vaos;
+
+int main() {
 	GLFWwindow* window;
 
 	setupWindow(window);
@@ -94,16 +96,58 @@ int main()
 	glViewport(0, 0, width, height);
 
 	Shader shader("../shaders/sprite.vs", "../shaders/sprite.fs");
-	readFromObj(basePath + objFileName);
-	readFromMtl(basePath + "/mtl/" + mtlFilePath);
-	GLuint textureID = loadTexture(basePath + "/textures/" + textureFilePath);
-	GLuint VAO = setupGeometry();
+
+	objectsConfig.push_back("cubo.txt");
+	objectsConfig.push_back("cubo.txt");
+
+	// Range-based for loop
+	for (const std::string& config : objectsConfig) {
+		std::cout << "Object config: " << config << std::endl;
+		Mesh object = loadObjectConfig(config);
+
+		readFromObj(object);
+		readFromMtl(object);
+		loadTexture(object);
+
+		GLuint VAO = setupGeometry(object.getDataVertices());
+		vaos.push_back(VAO);
+
+		objects.push_back(object);
+	}
+
+
+	//salva objPath e totalVertices
+	//Mesh object1 = loadObjectConfig("cubo.txt");
+	//Mesh object2 = loadObjectConfig("cubo.txt");
+
+	
+	//salva vertices e mtlPath
+	//usa objPath
+	//readFromObj(object1);
+	//readFromObj(object2);
+
+	//leitura ks ka kd e textureFilePath
+	//usa mtlPath
+	//readFromMtl(object1);
+	//readFromMtl(object2);
+
+	//salva texID
+	//usa texturePath
+	//loadTexture(object1);
+	//loadTexture(object2);
+
+	//cria VAO
+	//GLuint VAO1 = setupGeometry(object1.getDataVertices());
+	//GLuint VAO2 = setupGeometry(object1.getDataVertices());
+	//GLuint VAO3 = setupGeometry(totalvertices);
 
 	glUseProgram(shader.ID);
 	glUniform1i(glGetUniformLocation(shader.ID, "tex_buffer"), 0);
 
-	Mesh object;
-	object.initialize(VAO, (totalvertices.size() / 8), &shader);
+	//Mesh object3;
+	objects[0].initialize(vaos[0], (objects[0].getDataVertices().size() / 8), &shader, glm::vec3(-2.0, 0.0, 0.0));
+	objects[1].initialize(vaos[1], (objects[1].getDataVertices().size() / 8), &shader, glm::vec3(0.0, 0.0, 0.0));
+	//object3.initialize(VAO1, (totalvertices.size() / 8), &shader, glm::vec3(2.0, 0.0, 0.0));
 
 	setupShader(shader);
 
@@ -122,8 +166,7 @@ int main()
 	int i = 0;
 	int speed = 0;
 
-	while (!glfwWindowShouldClose(window))
-	{
+	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -134,11 +177,16 @@ int main()
 
 		camera.update();
 
-		glm::vec3 pointOnCurve = bezier.getPointOnCurve(i);
+		glm::vec3 pointOnCurve1 = bezier.getPointOnCurve(i);
 
-		object.update(pointOnCurve, rotateX, rotateY, rotateZ, scale);
+		objects[0].update(pointOnCurve1, rotateX, rotateY, rotateZ, scale);
+		objects[0].draw(objects[0].getTexId());
 
-		object.draw(textureID);
+		objects[1].update(glm::vec3(2.0, 0.0, 0.0), rotateX, rotateY, rotateZ, scale);
+		objects[1].draw(objects[1].getTexId());
+
+		//object3.update(glm::vec3(-2.0, 0.0, 0.0), rotateX, rotateY, rotateZ, scale);
+		//object3.draw(textureID1);
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -150,9 +198,59 @@ int main()
 		glfwSwapBuffers(window);
 	}
 
-	glDeleteVertexArrays(1, &VAO);
+	glDeleteVertexArrays(1, &vaos[0]);
+	glDeleteVertexArrays(1, &vaos[1]);
 	glfwTerminate();
 	return 0;
+}
+
+Mesh loadObjectConfig(string path) {
+	Mesh object;
+
+	std::ifstream file("../../Arquivos/config/" + path);
+
+	if (!file.is_open()) {
+		std::cout << "Failed to open the config file." << std::endl;
+	}
+
+	std::string line;
+	std::string objFilePath;
+	std::string textureFilePath;
+	std::string name;
+	std::string mtlFilePath;
+
+	while (std::getline(file, line)) {
+		if (line.length() > 0) {
+
+			std::istringstream iss(line);
+			std::string prefix;
+			iss >> prefix;
+
+			if (prefix == "name") {
+				iss >> name;
+				std::cout << name << std::endl;
+			}
+			else if (prefix == "obj") {
+				iss >> objFilePath;
+				std::cout << objFilePath << std::endl;
+			}
+			/*else if (prefix == "texture") {
+				iss >> textureFilePath;
+				std::cout << textureFilePath << std::endl;
+			}
+			else if (prefix == "mtl") {
+				iss >> textureFilePath;
+				std::cout << textureFilePath << std::endl;
+			}*/
+		}
+	}
+
+	file.close();
+
+	//object.setPaths(textureFilePath, objFilePath, mtlFilePath);
+	object.setObjFilePath(objFilePath);
+
+	return object;
 }
 
 void setupShader(Shader shader) {
@@ -165,15 +263,17 @@ void setupShader(Shader shader) {
 	shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 }
 
-void readFromMtl(string path)
-{
+void readFromMtl(Mesh& object) {
+	std::string path = basePath + "mtl/" + object.getMtlPath();
 	std::ifstream file(path);
+
+	cout << path << endl;
 
 	if (!file.is_open()) {
 		std::cout << "Failed to open mtl file." << std::endl;
 	}
 
-	std::string line;
+	std::string line, textureFilePath;
 
 	while (std::getline(file, line)) {
 		if (line.length() > 0) {
@@ -182,21 +282,20 @@ void readFromMtl(string path)
 			std::string prefix;
 			iss >> prefix;
 
-			if (prefix == "map_Kd")
-			{
+			if (prefix == "map_Kd") {
 				iss >> textureFilePath;
+				object.setTextureFilePath(textureFilePath);
 			}
-			else if (prefix == "Ka")
-			{
+			else if (prefix == "Ka") {
 				glm::vec3 temp_ka;
+				iss >> temp_ka.x >> temp_ka.y >> temp_ka.z;
 				iss >> temp_ka.x >> temp_ka.y >> temp_ka.z;
 
 				ka.push_back(temp_ka.x);
 				ka.push_back(temp_ka.y);
 				ka.push_back(temp_ka.z);
 			}
-			else if (prefix == "Ks")
-			{
+			else if (prefix == "Ks") {
 				glm::vec3 temp_ks;
 				iss >> temp_ks.x >> temp_ks.y >> temp_ks.z;
 
@@ -204,8 +303,7 @@ void readFromMtl(string path)
 				ks.push_back(temp_ks.x);
 				ks.push_back(temp_ks.x);
 			}
-			else if (prefix == "Ns")
-			{
+			else if (prefix == "Ns") {
 				iss >> ns;
 			}
 		}
@@ -214,15 +312,14 @@ void readFromMtl(string path)
 	file.close();
 }
 
-int setupGeometry()
-{
+int setupGeometry(std::vector<GLfloat> vertices) {
 	GLuint VBO, VAO;
 
 	glGenBuffers(1, &VBO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-	glBufferData(GL_ARRAY_BUFFER, totalvertices.size() * sizeof(GLfloat), totalvertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STATIC_DRAW);
 
 	glGenVertexArrays(1, &VAO);
 
@@ -245,7 +342,9 @@ int setupGeometry()
 	return VAO;
 }
 
-void readFromObj(string path) {
+void readFromObj(Mesh& object) {
+	std::string path = basePath + object.getObjPath();
+
 	std::ifstream file(path);
 
 	if (!file.is_open()) {
@@ -255,8 +354,10 @@ void readFromObj(string path) {
 	std::vector<glm::vec3> temp_vertices;
 	std::vector<glm::vec2> temp_textures;
 	std::vector<glm::vec3> temp_normais;
+	std::vector<GLfloat> temp_total;
 
 	std::string line;
+	std::string mtlFilePath;
 
 	while (std::getline(file, line)) {
 		if (line.length() > 0) {
@@ -272,55 +373,53 @@ void readFromObj(string path) {
 				iss >> values.x >> values.y >> values.z;
 				temp_vertices.push_back(values);
 			}
-			else if (prefix == "vt")
-			{
+			else if (prefix == "vt") {
 				glm::vec2 values;
 				iss >> values.x >> values.y;
 				temp_textures.push_back(values);
 			}
-			else if (prefix == "vn")
-			{
+			else if (prefix == "vn") {
 				glm::vec3 values;
 				iss >> values.x >> values.y >> values.z;
 				temp_normais.push_back(values);
 			}
-			else if (prefix == "f")
-			{
+			else if (prefix == "f") {
 				unsigned int vertexIndex, textIndex, normalIndex;
 				char slash;
 
-				for (int i = 0; i < 3; ++i)
-				{
+				for (int i = 0; i < 3; ++i) {
 					iss >> vertexIndex >> slash >> textIndex >> slash >> normalIndex;
 
 					glm::vec3 verticess = temp_vertices[vertexIndex - 1];
 					glm::vec3 normaiss = temp_normais[normalIndex - 1];
 					glm::vec2 texturess = temp_textures[textIndex - 1];
 
-					totalvertices.push_back(verticess.x);
-					totalvertices.push_back(verticess.y);
-					totalvertices.push_back(verticess.z);
+					temp_total.push_back(verticess.x);
+					temp_total.push_back(verticess.y);
+					temp_total.push_back(verticess.z);
 
-					totalvertices.push_back(texturess.x);
-					totalvertices.push_back(texturess.y);
+					temp_total.push_back(texturess.x);
+					temp_total.push_back(texturess.y);
 
-					totalvertices.push_back(normaiss.x);
-					totalvertices.push_back(normaiss.y);
-					totalvertices.push_back(normaiss.z);
+					temp_total.push_back(normaiss.x);
+					temp_total.push_back(normaiss.y);
+					temp_total.push_back(normaiss.z);
 				}
 			}
-			else if (prefix == "mtllib")
-			{
+			else if (prefix == "mtllib") {
 				iss >> mtlFilePath;
+				object.setMtlFilePath(mtlFilePath);
 			}
 		}
 	}
 
 	file.close();
+
+	object.setDataVertices(temp_total);
 }
 
-int loadTexture(string path)
-{
+void loadTexture(Mesh& object) {
+	std::string path = basePath + "textures/" + object.getTexturePath();
 	GLuint texID;
 
 	glGenTextures(1, &texID);
@@ -335,27 +434,23 @@ int loadTexture(string path)
 	int width, height, nrChannels;
 	unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
 
-	if (data)
-	{
-		if (nrChannels == 3)
-		{
+	if (data) {
+		if (nrChannels == 3) {
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 		}
-		else
-		{
+		else {
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		}
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
-	else
-	{
+	else {
 		cout << "Failed to load texture" << endl;
 	}
 
 	stbi_image_free(data);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	return texID;
+	object.setTexId(texID);
 }
 
 void setupWindow(GLFWwindow*& window) {
@@ -372,8 +467,7 @@ void setupWindow(GLFWwindow*& window) {
 	//Desabilita o desenho do cursor 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		std::cout << "Failed to initialize GLAD" << std::endl;
 	}
 
@@ -384,54 +478,46 @@ void setupWindow(GLFWwindow*& window) {
 	cout << "OpenGL version supported " << version << endl;
 }
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 	camera.mouseCallback(window, xpos, ypos);
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
-{
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode) {
 	float scaleIncrement = 0.1f;
 
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
-	if (key == GLFW_KEY_X && action == GLFW_PRESS)
-	{
+	if (key == GLFW_KEY_X && action == GLFW_PRESS) {
 		rotateX = true;
 		rotateY = false;
 		rotateZ = false;
 	}
 
-	if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-	{
+	if (key == GLFW_KEY_Y && action == GLFW_PRESS) {
 		rotateX = false;
 		rotateY = true;
 		rotateZ = false;
 	}
 
-	if (key == GLFW_KEY_Z && action == GLFW_PRESS)
-	{
+	if (key == GLFW_KEY_Z && action == GLFW_PRESS) {
 		rotateX = false;
 		rotateY = false;
 		rotateZ = true;
 
 	}
-	if (key == GLFW_KEY_P && action == GLFW_PRESS)
-	{
+	if (key == GLFW_KEY_P && action == GLFW_PRESS) {
 		rotateX = false;
 		rotateY = false;
 		rotateZ = false;
 
 	}
 
-	if (key == GLFW_KEY_R && action == GLFW_PRESS)
-	{
+	if (key == GLFW_KEY_R && action == GLFW_PRESS) {
 		scale -= scaleIncrement;
 
 	}
-	if (key == GLFW_KEY_T && action == GLFW_PRESS)
-	{
+	if (key == GLFW_KEY_T && action == GLFW_PRESS) {
 		scale += scaleIncrement;
 
 	}
@@ -439,8 +525,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	camera.setCameraPos(key);
 }
 
-std::vector<glm::vec3> generateTranslatePoints(string path)
-{
+std::vector<glm::vec3> generateTranslatePoints(string path) {
 	std::ifstream file(path);
 
 	if (!file.is_open()) {
@@ -468,75 +553,3 @@ std::vector<glm::vec3> generateTranslatePoints(string path)
 
 	return points;
 }
-/*(-1, 0)
-(-0.866, -0.5)
-(-0.5, -0.866)
-(0, -1)
-(0.5, -0.866)
-(0.866, -0.5)
-(1, 0)
-(0.866, 0.5)
-(0.5, 0.866)
-(0, 1)
-(-0.5, 0.866)
-(-0.866, 0.5)
-(-0.951, -0.259)
-(-0.707, -0.707)
-(-0.259, -0.951)
-(0.259, -0.951)
-(0.707, -0.707)
-(0.951, -0.259)
-(0.951, 0.259)
-(0.707, 0.707)
-(0.259, 0.951)
-(-0.259, 0.951)
-(-0.707, 0.707)
-(-0.951, 0.259)*/
-
-/*
--1, 0,0,
-
-0, -1,0,
-
-1, 0,0,
-
-0, 1,0,
-
-
--0.707, -0.707,0,
-
-0.707, -0.707,0,
-
-0.707, 0.707,0,
-
--0.707, 0.707,0,
-*/
-
-/*
-(-1, 0)
-(-0.866, -0.5)
-(-0.5, -0.866)
-(0, -1)
-(0.5, -0.866)
-(0.866, -0.5)
-(1, 0)
-(0.866, 0.5)
-(0.5, 0.866)
-(0, 1)
-(-0.5, 0.866)
-(-0.866, 0.5)
-(-0.951, -0.259)
-(-0.707, -0.707)
-(-0.259, -0.951)
-(0.259, -0.951)
-(0.707, -0.707)
-(0.951, -0.259)
-(0.951, 0.259)
-(0.707, 0.707)
-(0.259, 0.951)
-(-0.259, 0.951)
-(-0.707, 0.707)
-(-0.951, 0.259)
-*/
-
-
