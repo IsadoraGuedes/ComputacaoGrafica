@@ -75,7 +75,7 @@ bool rotateZ = false;
 GLfloat translateX = 0.0f;
 GLfloat translateY = 0.0f;
 GLfloat translateZ = 0.0f;
-float scale = 1.0f;
+float scale = 0.5f;
 
 Camera camera;
 
