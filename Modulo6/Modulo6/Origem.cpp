@@ -34,7 +34,6 @@ using namespace std;
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void setupWindow(GLFWwindow*& window);
-void setupTransformacoes(glm::mat4& model, glm::vec3 pointOnCurve);
 void setupShader(Shader shader);
 
 //geometry configuration
@@ -44,10 +43,7 @@ int setupGeometry();
 int loadTexture(string path);
 
 // Parametric curves
-vector <glm::vec3> generateControlPointsSet(int nPoints);
-vector <glm::vec3> generateControlPointsSet();
-std::vector<glm::vec3> generateTranslatePoints();
-GLuint generateControlPointsBuffer(vector <glm::vec3> controlPoints);
+std::vector<glm::vec3> generateTranslatePoints(string path);
 
 //obj values
 vector<GLfloat> totalvertices;
@@ -83,7 +79,7 @@ bool rotateZ = false;
 GLfloat translateX = 0.0f;
 GLfloat translateY = 0.0f;
 GLfloat translateZ = 0.0f;
-float scale = 1.0f;
+float scale = 0.5f;
 
 Camera camera;
 
@@ -115,7 +111,7 @@ int main()
 
 	camera.initialize(&shader, width, height);
 
-	std::vector<glm::vec3> basePoints = generateTranslatePoints();
+	std::vector<glm::vec3> basePoints = generateTranslatePoints(basePath + "/bezier/circle.txt");
 
 	Bezier bezier;
 	bezier.setControlPoints(basePoints);
@@ -140,10 +136,7 @@ int main()
 
 		glm::vec3 pointOnCurve = bezier.getPointOnCurve(i);
 
-		glm::mat4 model = glm::mat4(1);
-		setupTransformacoes(model, pointOnCurve);
-		GLint modelLoc = glGetUniformLocation(shader.ID, "model");
-		glUniformMatrix4fv(modelLoc, 1, 0, glm::value_ptr(model));
+		object.update(pointOnCurve, rotateX, rotateY, rotateZ, scale);
 
 		object.draw(textureID);
 
@@ -177,7 +170,7 @@ void readFromMtl(string path)
 	std::ifstream file(path);
 
 	if (!file.is_open()) {
-		std::cout << "Failed to open the file." << std::endl;
+		std::cout << "Failed to open mtl file." << std::endl;
 	}
 
 	std::string line;
@@ -398,6 +391,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
+	float scaleIncrement = 0.1f;
+
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
@@ -422,78 +417,56 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		rotateZ = true;
 
 	}
+	if (key == GLFW_KEY_P && action == GLFW_PRESS)
+	{
+		rotateX = false;
+		rotateY = false;
+		rotateZ = false;
+
+	}
+
+	if (key == GLFW_KEY_R && action == GLFW_PRESS)
+	{
+		scale -= scaleIncrement;
+
+	}
+	if (key == GLFW_KEY_T && action == GLFW_PRESS)
+	{
+		scale += scaleIncrement;
+
+	}
+
 	camera.setCameraPos(key);
 }
 
-void setupTransformacoes(glm::mat4& model, glm::vec3 pointOnCurve)
+std::vector<glm::vec3> generateTranslatePoints(string path)
 {
-	float angle = (GLfloat)glfwGetTime();
+	std::ifstream file(path);
 
-	/*if (rotateX)
-	{
-		model = glm::rotate(model, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-	}
-	else if (rotateY)
-	{
-		model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-	}
-	else if (rotateZ)
-	{
-		model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+	if (!file.is_open()) {
+		std::cout << "Failed to open the points file." << std::endl;
 	}
 
-	// Translação
-	model = glm::translate(model, glm::vec3(translateX, translateY, translateZ));
+	std::string line;
+	vector <glm::vec3> points;
 
-	// Escala
-	model = glm::scale(model, glm::vec3(scale, scale, scale));*/
-	model = glm::translate(model, pointOnCurve);
-	model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0, 0.0, 1.0));
-	model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-}
+	while (std::getline(file, line)) {
+		if (line.length() > 0) {
 
-std::vector<glm::vec3> generateTranslatePoints()
-{
-	float vertices[] = {
--1, 0,0,
--0.866, -0.5,0,
--0.5, -0.866,0,
-0, -1,0,
-0.5, -0.866,0,
-0.866, -0.5,0,
-1, 0,0,
-0.866, 0.5,0,
-0.5, 0.866,0,
-0, 1,0,
--0.5, 0.866,0,
--0.866, 0.5,0,
--0.951, -0.259,0,
--0.707, -0.707,0,
--0.259, -0.951,0,
-0.259, -0.951,0,
-0.707, -0.707,0,
-0.951, -0.259,0,
-0.951, 0.259,0,
-0.707, 0.707,0,
-0.259, 0.951,0,
--0.259, 0.951,0,
--0.707, 0.707,0,
--0.951, 0.259,0
-	};
+			std::istringstream iss(line);
+			std::string prefix;
+			char comma;
 
-	vector <glm::vec3> uniPoints;
+			glm::vec3 temp_points;
+			iss >> temp_points.x >> comma >> temp_points.y >> comma >> temp_points.z;
 
-	for (int i = 0; i < 24 * 3; i += 3)
-	{
-		glm::vec3 point;
-		point.x = vertices[i];
-		point.y = vertices[i + 1];
-		point.z = vertices[i + 2];
-
-		uniPoints.push_back(point);
+			points.push_back(temp_points);
+		}
 	}
 
-	return uniPoints;
+	file.close();
+
+	return points;
 }
 /*(-1, 0)
 (-0.866, -0.5)
