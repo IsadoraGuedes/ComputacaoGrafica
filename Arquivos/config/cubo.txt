@@ -1,4 +1,0 @@
-name cubo
-obj CuboTextured.obj
-texture Cube.png
-mtl CuboTextured.mtl

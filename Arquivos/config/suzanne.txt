@@ -1,3 +1,5 @@
 name suzanne
 obj SuzanneTriTextured.obj
-texture ../textures/suzanne.png
+texture suzanne.png
+position 2.0, 0.0, 0.0
+static true

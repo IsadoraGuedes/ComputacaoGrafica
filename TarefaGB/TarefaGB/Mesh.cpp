@@ -1,27 +1,35 @@
 #include "Mesh.h"
 
-void Mesh::initialize(GLuint VAO, int nVertices, Shader* shader, glm::vec3 position, float angle, glm::vec3 axis)
+void Mesh::initialize(GLuint VAO, Shader* shader, float angle, glm::vec3 axis,
+	bool rotateX, bool rotateY, bool rotateZ, float scale, bool isStatic)
 {
 	this->VAO = VAO;
-	this->nVertices = nVertices;
 	this->shader = shader;
-	this->position = position;
 	this->angle = angle;
 	this->axis = axis;
+
+	this->rotateX = rotateX;
+	this->rotateY = rotateY;
+	this->rotateZ = rotateZ;
+	this->scaleLevel = scale;
+	this->isStatic = isStatic;
+
 }
 
 void Mesh::draw(GLuint texId)
 {
+	int nVert = dataVertices.size() / 8;
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texId);
 	glBindVertexArray(VAO);
-	glDrawArrays(GL_TRIANGLES, 0, nVertices);
+	glDrawArrays(GL_TRIANGLES, 0, nVert);
 	glBindVertexArray(0);
 }
 
-void Mesh::update(glm::vec3 pointOnCurve, bool rotateX, bool rotateY, bool rotateZ, float scale) {
+void Mesh::update(glm::vec3 pointOnCurve) {
 	glm::mat4 model = glm::mat4(1);
-	setupTransformacoes(model, pointOnCurve, rotateX, rotateY, rotateZ, scale);
+	setupTransformacoes(model, pointOnCurve, rotateX, rotateY, rotateZ, scaleLevel);
 	GLint modelLoc = glGetUniformLocation(shader->ID, "model");
 	glUniformMatrix4fv(modelLoc, 1, 0, glm::value_ptr(model));
 }
@@ -67,12 +75,6 @@ string Mesh::getMtlPath() {
 	return mtlFilePath;
 }
 
-void Mesh::setPaths(string textFilePath, string objFilePath, string mtlFilePath) {
-	this->textFilePath = textFilePath;
-	this->objFilePath = objFilePath;
-	this->mtlFilePath = mtlFilePath;
-}
-
 void Mesh::setObjFilePath(string path) {
 	this->objFilePath = path;
 }
@@ -85,10 +87,58 @@ void Mesh::setTextureFilePath(string path) {
 	this->textFilePath = path;
 }
 
+void Mesh::setPosition(glm::vec3 position) {
+	this->position = position;
+}
+
 void Mesh::setDataVertices(vector<GLfloat> vertices) {
 	this->dataVertices = vertices;
 }
 
 vector<GLfloat> Mesh::getDataVertices() {
 	return dataVertices;
+}
+
+void Mesh::setRotateX() {
+	rotateX = true;
+	rotateY = false;
+	rotateZ = false;
+}
+
+void Mesh::setRotateY() {
+	rotateX = false;
+	rotateY = true;
+	rotateZ = false;
+}
+
+void Mesh::setRotateZ() {
+	rotateX = false;
+	rotateY = false;
+	rotateZ = true;
+}
+
+void Mesh::resetRotate() {
+	rotateX = false;
+	rotateY = false;
+	rotateZ = false;
+}
+
+void Mesh::incrementScale(float scaleFactor) {
+	scaleLevel += scaleFactor;
+}
+
+void Mesh::decrementScale(float scaleFactor) {
+	scaleLevel -= scaleFactor;
+}
+
+void Mesh::setIsStatic(bool isStatic) {
+	isStatic = isStatic;
+}
+
+bool Mesh::getIsStatic() {
+	return isStatic;
+}
+
+glm::vec3 Mesh::getPosition() {
+	return position;
 }

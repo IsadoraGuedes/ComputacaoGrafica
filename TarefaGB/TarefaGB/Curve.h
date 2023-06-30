@@ -18,7 +18,6 @@ public:
 	Curve() {}
 	inline void setControlPoints(vector <glm::vec3> controlPoints) { this->controlPoints = controlPoints; }
 	void setShader(Shader* shader);
-	void generateCurve(int pointsPerSegment);
 	void drawCurve(glm::vec4 color);
 	int getNbCurvePoints() { return curvePoints.size(); }
 	glm::vec3 getPointOnCurve(int i) { return curvePoints[i]; }
