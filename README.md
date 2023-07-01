@@ -62,3 +62,11 @@ Autora: Isadora Soares Guedes
 - Trajetória circular pelos pontos definidos dentro do código
 
 ![imagem1](/Modulo6/imagens/modulo6.gif)
+
+## Entrega do GB
+
+- Leitura de arquivo .txt de configuração com informação do objeto
+- Mais de uma instância de objetos em cena, com seus controles próprios
+- Cena completa com operações desenvolvidas ao longo do bimestre: rotações, escala, transformações, iluminação, texturas, controle da câmera por teclado e mouse
+
+![imagem1](/TarefaGB/imagens/gb-final.gif)
