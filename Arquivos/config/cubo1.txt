@@ -1,9 +1,6 @@
 name cubo
 obj CuboTextured.obj
-texture Cube.png
-mtl CuboTextured.mtl
 position -2.0, 0.0, 0.0
-static false
 t -1, 0,0
 t -0.866, -0.5,0
 t -0.5, -0.866,0

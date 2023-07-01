@@ -47,15 +47,8 @@ Mesh loadObjectConfig(string path);
 // Parametric curves
 std::vector<glm::vec3> generateTranslatePoints(string path);
 
-//obj values
-std::vector<GLfloat> totalvertices;
-std::vector<GLfloat> vertices;
-std::vector<GLfloat> textures;
-std::vector<GLfloat> normais;
-
 //file values
 string basePath = "../../Arquivos/";
-string objFileName = "CuboTextured.obj";
 
 //iluminacao values
 std::vector<GLfloat> ka;
@@ -70,12 +63,6 @@ float pitch = 0.0, yaw = -90.0;
 // Window size
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
-
-// Transformation parameters
-GLfloat translateX = 0.0f;
-GLfloat translateY = 0.0f;
-GLfloat translateZ = 0.0f;
-float scale = 0.5f;
 
 Camera camera;
 
@@ -96,11 +83,14 @@ int main() {
 
 	Shader shader("../shaders/sprite.vs", "../shaders/sprite.fs");
 
+	// Definição dos objetos a serem usados em cena
+	// Cada objeto deve ter seu próprio arquivo txt de configuração dentro da pasta "Arquivos/config"
 	objectsConfig.push_back("cubo1.txt");
 	objectsConfig.push_back("cubo2.txt");
 	objectsConfig.push_back("suzanne.txt");
+	objectsConfig.push_back("cubo3.txt");
 
-	// Range-based for loop
+	// Inicialização dos objetos em cena, leitura dos dados dos arquivos de configuração .txt .obj .mtl e texturas
 	for (const string& config : objectsConfig) {
 		std::cout << "Object config: " << config << std::endl;
 		Mesh object = loadObjectConfig(config);
@@ -126,16 +116,14 @@ int main() {
 
 	camera.initialize(&shader, width, height);
 
-	//createBezierPoints(objects[0]);
-
 	std::vector<glm::vec3> basePoints = generateTranslatePoints(basePath + "/bezier/circle.txt");
 
 	Bezier bezier;
 	bezier.setControlPoints(basePoints);
 	bezier.setShader(&shader);
 	bezier.generateCurve(30);
-
 	int nbCurvePoints = bezier.getNbCurvePoints();
+
 	int i = 0;
 	int speed = 0;
 
@@ -150,25 +138,25 @@ int main() {
 
 		camera.update();
 
+		glm::vec3 pointOnCurve1 = bezier.getPointOnCurve(i);
 
-		for (Mesh& object : objects) {
-			if (object.getIsStatic()) {
+		objects[0].update(pointOnCurve1);
+		objects[0].draw(objects[0].getTexId());
+
+		//Inicialização dos objetos em cena
+		int j = 0;
+		for (Mesh& object: objects) {
+			if (j++ > 0) {
 				object.update(object.getPosition());
+				object.draw(object.getTexId());
 			}
-			else {
-				glm::vec3 pointOnCurve1 = bezier.getPointOnCurve(i);
-				object.update(pointOnCurve1);
-			}
-			
-			object.draw(object.getTexId());
 		}
-
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		if (speed++ == 50) {
-			i = (i + 1) % nbCurvePoints;
 			speed = 0;
+			i = (i + 1) % nbCurvePoints;
 		}
 
 		glfwSwapBuffers(window);
@@ -196,7 +184,7 @@ Mesh loadObjectConfig(string path) {
 	string name;
 	string mtlFilePath;
 	glm::vec3 position;
-	bool isStatic;
+	std::vector<glm::vec3> temp_basePoints;
 
 	while (std::getline(file, line)) {
 		if (line.length() > 0) {
@@ -216,12 +204,12 @@ Mesh loadObjectConfig(string path) {
 			else if (prefix == "position") {
 				char comma;
 				iss >> position.x >> comma >> position.y >> comma >> position.z;
-
 			}
-			else if (prefix == "static") {
-				iss >> isStatic;
-				std::cout << "isStatic" << std::endl;
-				std::cout << isStatic << std::endl;
+			else if (prefix == "t") {
+				char comma;
+				iss >> position.x >> comma >> position.y >> comma >> position.z;
+
+				temp_basePoints.push_back(position);
 			}
 		}
 	}
@@ -230,7 +218,7 @@ Mesh loadObjectConfig(string path) {
 
 	object.setObjFilePath(objFilePath);
 	object.setPosition(position);
-	object.setIsStatic(isStatic);
+	object.setBasePoints(temp_basePoints);
 
 	return object;
 }
@@ -440,7 +428,7 @@ void loadTexture(Mesh& object) {
 void setupWindow(GLFWwindow*& window) {
 	glfwInit();
 
-	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Modulo 4: Iluminacao - Isadora Guedes", nullptr, nullptr);
+	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Tarefa GB - Isadora Guedes", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 
 	glfwSetKeyCallback(window, key_callback);
@@ -468,6 +456,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode) {
 	float scaleIncrement = 0.1f;
+	float translateStep = 0.1f;
 
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
@@ -501,6 +490,20 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		objects[keyIndex].decrementScale(scaleIncrement);
 	}
 
+	// Translação -----------------
+	if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+		switch (key) {
+		case GLFW_KEY_I:
+			objects[keyIndex].incrementTranslateX(translateStep);
+			break;
+		case GLFW_KEY_J:
+			objects[keyIndex].decrementTranslateX(translateStep);
+			break;
+		default:
+			break;
+		}
+	}
+
 	//index -------------------------
 	/*
 	#define GLFW_KEY_0                  48
@@ -513,7 +516,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	#define GLFW_KEY_7                  55
 	#define GLFW_KEY_8                  56
 	#define GLFW_KEY_9                  57
-*/
+	*/
 
 
 	camera.setCameraPos(key);

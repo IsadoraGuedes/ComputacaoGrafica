@@ -1,7 +1,7 @@
 #include "Mesh.h"
 
 void Mesh::initialize(GLuint VAO, Shader* shader, float angle, glm::vec3 axis,
-	bool rotateX, bool rotateY, bool rotateZ, float scale, bool isStatic)
+	bool rotateX, bool rotateY, bool rotateZ, float scale, float translateX)
 {
 	this->VAO = VAO;
 	this->shader = shader;
@@ -12,8 +12,7 @@ void Mesh::initialize(GLuint VAO, Shader* shader, float angle, glm::vec3 axis,
 	this->rotateY = rotateY;
 	this->rotateZ = rotateZ;
 	this->scaleLevel = scale;
-	this->isStatic = isStatic;
-
+	this->translateX = translateX;
 }
 
 void Mesh::draw(GLuint texId)
@@ -34,7 +33,6 @@ void Mesh::update(glm::vec3 pointOnCurve) {
 	glUniformMatrix4fv(modelLoc, 1, 0, glm::value_ptr(model));
 }
 
-
 void Mesh::setupTransformacoes(glm::mat4& model, glm::vec3 pointOnCurve, bool rotateX, bool rotateY, bool rotateZ, float scale)
 {
 	float angle = (GLfloat)glfwGetTime();
@@ -51,6 +49,7 @@ void Mesh::setupTransformacoes(glm::mat4& model, glm::vec3 pointOnCurve, bool ro
 	{
 		model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
 	}
+	pointOnCurve.x = pointOnCurve.x + translateX;
 	model = glm::translate(model, pointOnCurve);
 	model = glm::scale(model, glm::vec3(scale, scale, scale));
 }
@@ -131,14 +130,19 @@ void Mesh::decrementScale(float scaleFactor) {
 	scaleLevel -= scaleFactor;
 }
 
-void Mesh::setIsStatic(bool isStatic) {
-	isStatic = isStatic;
+void Mesh::incrementTranslateX(float translateStep) {
+	translateX += translateStep;
 }
 
-bool Mesh::getIsStatic() {
-	return isStatic;
+void Mesh::decrementTranslateX(float translateStep) {
+	translateX -= translateStep;
 }
+
 
 glm::vec3 Mesh::getPosition() {
 	return position;
+}
+
+void Mesh::setBasePoints(std::vector<glm::vec3> basePoints) {
+	this->basePoints = basePoints;
 }
